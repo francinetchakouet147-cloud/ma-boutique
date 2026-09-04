@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Enregistrer</title>
+<link rel="manifest" href="/static/manifest.json">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}body{background:var(--bg)}.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;padding:22px;color:#cbd5e1}.sidebar a{color:#94a3b8;text-decoration:none;display:block;padding:12px 14px;border-radius:12px;margin-bottom:8px}.sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}.main{margin-left:260px;padding:28px}.card{border:0;border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.06)}.input{border-radius:14px;padding:13px;border:1px solid #e2e8f0}.btn-gold{background:var(--accent);border:0;color:#000;font-weight:800;border-radius:12px;padding:13px}</style></head><body>
+<div class="sidebar"><h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">Chic Luxe</small><hr style="border-color:#334155"><a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a><a href="/enregistrer" class="active"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a><a href="/categories"><i class="bi bi-tags me-2"></i>Catégories</a><a href="/statistiques"><i class="bi bi-graph-up me-2"></i>Statistiques</a><a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a><div style="position:absolute;bottom:20px;width:216px"><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center;text-decoration:none">Déconnexion</a></div></div>
+<div class="main">
+
+<div class="card p-4 p-md-5 mb-4 w-100">
+<div class="d-flex align-items-center gap-3 mb-4"><div style="width:48px;height:48px;background:var(--primary);color:var(--accent);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px">+</div><div><h4 class="fw-bold mb-0" id="title">Nouveau produit</h4><small class="text-muted">Remplis et ça part dans stock.db</small></div></div>
+<div class="row g-3">
+<div class="col-md-6"><label class="fw-semibold">Nom du produit *</label><input id="p_nom" class="form-control input" placeholder="Ex: Jus 1L"></div>
+<div class="col-md-6"><label class="fw-semibold">Catégorie *</label><input id="p_groupe" class="form-control input" placeholder="Ex: Boissons" list="catList"><datalist id="catList"></datalist></div>
+<div class="col-md-3"><label class="fw-semibold">Quantité *</label><input id="p_qte" type="number" class="form-control input" placeholder="12"></div>
+<div class="col-md-3"><label class="fw-semibold">Unité</label><input id="p_unite" class="form-control input" placeholder="bouteille"></div>
+<div class="col-md-3"><label class="fw-semibold">Prix d'achat</label><input id="p_achat" type="number" class="form-control input" placeholder="FCFA"></div>
+<div class="col-md-3"><label class="fw-semibold">Prix de vente</label><input id="p_vente" type="number" class="form-control input" placeholder="500"></div>
+</div>
+<input type="hidden" id="p_id">
+<button class="btn btn-gold w-100 mt-4" style="font-size:16px" onclick="save()">💾 Enregistrer dans la boutique</button>
+<div id="msg" class="mt-3"></div>
+</div>
+
+<div class="card p-4">
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2"><h5 class="fw-bold mb-0">📦 Mes produits (<span id="count">0</span>)</h5><input id="search" class="form-control" style="max-width:320px;border-radius:50px" placeholder="🔍 Rechercher..." oninput="render()"></div>
+<div class="table-responsive"><table class="table align-middle"><thead style="background:#f8fafc"><tr><th>Produit</th><th>Catégorie</th><th>Stock</th><th>Achat</th><th>Vente</th><th>Bénéf</th><th class="text-end">Actions</th></tr></thead><tbody id="list"></tbody></table></div>
+</div>
+
+</div>
+<script>
+let boutique=localStorage.getItem('boutique')||'Boutique Bibi Shop';document.getElementById('bName').innerText=boutique;let stock=[];let params=new URLSearchParams(location.search);let editId=params.get('id');
+async function loadAll(){let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();stock=j.stock;document.getElementById('count').innerText=stock.length;let cats=[...new Set(stock.map(s=>s.groupe))];document.getElementById('catList').innerHTML=cats.map(c=>`<option value="${c}">`).join('');if(editId){let p=stock.find(x=>x.id==editId);if(p){document.getElementById('p_id').value=p.id;document.getElementById('p_nom').value=p.nom;document.getElementById('p_groupe').value=p.groupe;document.getElementById('p_qte').value=p.qte;document.getElementById('p_unite').value=p.unite;document.getElementById('p_achat').value=p.achat;document.getElementById('p_vente').value=p.vente;document.getElementById('title').innerText='✏️ Modifier '+p.nom;}}render();}
+function render(){let q=document.getElementById('search').value.toLowerCase();let f=stock.filter(p=>p.nom.toLowerCase().includes(q)||p.groupe.toLowerCase().includes(q));let h='';f.forEach(p=>{let benef=p.vente-p.achat;h+=`<tr><td><b>${p.nom}</b></td><td><span class="badge rounded-pill" style="background:#f1f5f9;color:#1e293b">${p.groupe}</span></td><td>${p.qte} ${p.unite}</td><td>${p.achat.toLocaleString()} FCFA</td><td class="fw-bold">${p.vente.toLocaleString()} FCFA</td><td><span style="color:#10b981;font-weight:700">+${benef.toLocaleString()}</span></td><td class="text-end"><button class="btn btn-sm btn-light rounded-pill me-1" onclick="edit(${p.id})">✏️</button><button class="btn btn-sm btn-outline-danger rounded-pill" onclick="delP(${p.id})"><i class="bi bi-trash"></i></button></td></tr>`});document.getElementById('list').innerHTML=h||'<tr><td colspan=7 class="text-center text-muted py-4">Aucun produit</td></tr>';}
+function edit(id){let p=stock.find(x=>x.id==id);if(!p)return;document.getElementById('p_id').value=p.id;document.getElementById('p_nom').value=p.nom;document.getElementById('p_groupe').value=p.groupe;document.getElementById('p_qte').value=p.qte;document.getElementById('p_unite').value=p.unite;document.getElementById('p_achat').value=p.achat;document.getElementById('p_vente').value=p.vente;document.getElementById('title').innerText='✏️ Modifier '+p.nom;window.scrollTo({top:0,behavior:'smooth'});}
+async function delP(id){if(!confirm('Supprimer ?'))return;await fetch('/api/stock/'+id,{method:'DELETE'});loadAll();}
+async function save(){let data={id:document.getElementById('p_id').value||null,boutique,groupe:document.getElementById('p_groupe').value.trim(),nom:document.getElementById('p_nom').value.trim(),qte:parseFloat(document.getElementById('p_qte').value)||0,unite:document.getElementById('p_unite').value||'pièce',achat:parseFloat(document.getElementById('p_achat').value)||0,vente:parseFloat(document.getElementById('p_vente').value)||0};if(!data.nom||!data.groupe)return alert('Nom et catégorie obligatoires');await fetch('/api/stock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});document.getElementById('msg').innerHTML='<div class="alert alert-success py-2 rounded-3">✅ Enregistré</div>';document.getElementById('p_id').value='';document.getElementById('p_nom').value='';document.getElementById('title').innerText='Nouveau produit';loadAll();}
+loadAll();
+</script></body></html>

@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Factures</title>
+<link rel="manifest" href="/static/manifest.json">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}body{background:var(--bg)}.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;padding:22px;top:0;left:0;color:#cbd5e1}.sidebar a{color:#94a3b8;text-decoration:none;display:block;padding:12px 14px;border-radius:12px;margin-bottom:8px}.sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}.main{margin-left:260px;padding:20px 28px}.card{border:0;border-radius:18px;box-shadow:0 4px 20px rgba(0,0,0,.06)}</style></head><body>
+<div class="sidebar"><h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">Toutes les factures</small><hr style="border-color:#334155">
+<a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a>
+<a href="/ventes"><i class="bi bi-cart-check-fill me-2"></i>Ventes rapide</a>
+<a href="/commande"><i class="bi bi-receipt me-2"></i>Commande / Facture</a>
+<a href="/factures" class="active" style="background:var(--accent);color:#000;font-weight:700"><i class="bi bi-file-earmark-text me-2"></i>Factures</a>
+<a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a>
+<a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a>
+</div>
+<div class="main">
+<h5 class="fw-bold"><i class="bi bi-file-earmark-text me-2"></i>Factures gardées</h5><small class="text-muted">Toutes les factures envoyées sur WhatsApp</small>
+<div class="row g-3 mt-3" id="list"></div>
+</div>
+<script>
+let boutique=localStorage.getItem('boutique')||'Boutique Bibi Shop';document.getElementById('bName').innerText=boutique;
+async function load(){let r=await fetch('/api/factures?boutique='+encodeURIComponent(boutique));let data=await r.json();let html='';data.forEach(f=>{let prods=JSON.parse(f.produits);let detail=prods.map(p=>`${p.nom} x${p.qte}`).join(', ');html+=`<div class="col-md-6 col-xl-4"><div class="card p-3"><div class="d-flex justify-content-between"><b>${f.num}</b><small class="text-muted">${f.date}</small></div><b class="mt-2">${f.client}</b><br><small class="text-muted"><i class="bi bi-whatsapp"></i> ${f.tel}</small><hr class="my-2"><small>${detail}</small><div class="d-flex justify-content-between align-items-center mt-2"><h6 class="fw-bold mb-0">${f.total.toLocaleString()} FCFA</h6><div><a href="https://wa.me/${f.tel}?text=Bonjour ${f.client}, voici votre facture ${f.num} - ${f.total} FCFA - ${boutique}" target="_blank" class="btn btn-sm rounded-pill" style="background:#25D366;color:#fff"><i class="bi bi-whatsapp"></i></a> <button class="btn btn-sm btn-light rounded-pill" onclick="supp(${f.id})"><i class="bi bi-trash"></i></button></div></div></div></div>`});document.getElementById('list').innerHTML=html||'<p class="text-muted p-3">Aucune facture gardée</p>';}
+async function supp(id){if(!confirm('Supprimer cette facture?'))return;await fetch('/api/facture/'+id,{method:'DELETE'});load();}
+load();
+</script></body></html>

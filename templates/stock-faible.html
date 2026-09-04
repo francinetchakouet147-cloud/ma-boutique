@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stock Faible</title>
+<link rel="manifest" href="/static/manifest.json">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>
+:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}
+body{background:var(--bg)}
+.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;padding:22px;color:#cbd5e1;top:0;left:0}
+.sidebar a{color:#94a3b8;text-decoration:none;display:block;padding:12px 14px;border-radius:12px;margin-bottom:8px}
+.sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}
+.main{margin-left:260px;padding:28px}
+.card{border:0;border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+</style>
+</head>
+<body>
+<div class="sidebar">
+<h5 class="text-white fw-bold">MA BOUTIQUE</h5><small style="color:var(--accent)">Chic Luxe</small>
+<hr style="border-color:#334155">
+<a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a>
+<a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a>
+<a href="/categories"><i class="bi bi-tags me-2"></i>Catégories</a>
+<a href="/statistiques"><i class="bi bi-graph-up me-2"></i>Statistiques</a>
+<a href="/stock-faible" class="active" style="background:#ef4444;color:white"><i class="bi bi-exclamation-triangle me-2"></i>Stock faible ≤5</a>
+<div style="position:absolute;bottom:20px;width:216px"><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center;text-decoration:none">Déconnexion</a></div>
+</div>
+
+<div class="main">
+<div class="d-flex justify-content-between align-items-center mb-4">
+<h4 class="fw-bold">⚠️ Produits en rupture (≤ 5)</h4>
+<span class="badge bg-danger fs-6" id="countBadge">0 produit</span>
+</div>
+
+<div class="card p-4" style="width:100%">
+<div class="table-responsive">
+<table class="table align-middle">
+<thead style="background:#fef2f2">
+<tr><th>Produit</th><th>Catégorie</th><th>Qté</th><th>Achat</th><th>Vente</th><th>Bénéf/unité</th><th>Action</th></tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+</div>
+</div>
+</div>
+
+<script>
+async function load(){
+ // on prend la boutique sauvée dans login
+ let boutique = localStorage.getItem('boutique') || 'Boutique Bibi Shop';
+ let res = await fetch('/api/stock?boutique='+encodeURIComponent(boutique));
+ let data = await res.json();
+ let stock = data.stock || data || [];
+ 
+ // FILTRE STOCK FAIBLE <=5
+ let faible = stock.filter(p => Number(p.qte || p.quantite || 0) <= 5);
+ 
+ document.getElementById('countBadge').innerText = faible.length + ' produit(s)';
+ 
+ let html = '';
+ faible.forEach(p=>{
+   let qte = p.qte || p.quantite || 0;
+   let achat = Number(p.achat || 0);
+   let vente = Number(p.vente || 0);
+   html += `<tr style="border-left:4px solid #ef4444">
+     <td><b>${p.nom || p.produit}</b><br><span class="badge bg-danger">${qte} restant</span></td>
+     <td>${p.groupe || p.categorie || ''}</td>
+     <td class="fw-bold text-danger fs-5">${qte} ${p.unite||''}</td>
+     <td>${achat.toLocaleString()} FCFA</td>
+     <td class="fw-bold">${vente.toLocaleString()} FCFA</td>
+     <td style="color:#10b981;font-weight:700">+${(vente-achat).toLocaleString()}</td>
+     <td><a href="/enregistrer" class="btn btn-sm btn-dark rounded-pill">Recharger</a></td>
+   </tr>`;
+ });
+ document.getElementById('list').innerHTML = html || `<tr><td colspan=7 class="text-center py-5 text-muted">✅ Aucun stock faible ! Tout est OK</td></tr>`;
+}
+load();
+</script>
+</body>
+</html>
