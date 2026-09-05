@@ -1,101 +1,21 @@
 <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Catégories</title>
-<link rel="manifest" href="/static/manifest.json">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-<style>
-:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}
-body{background:var(--bg)}
-.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;top:0;left:0;color:#cbd5e1;display:flex;flex-direction:column;padding:22px 22px 0 22px}
-.sidebar.menu{flex:1;overflow-y:auto;padding-bottom:20px}
-.sidebar.menu::-webkit-scrollbar{width:0}
-.sidebar a{color:#94a3b8;text-decoration:none;display:flex;align-items:center;padding:12px 14px;border-radius:12px;margin-bottom:8px}
-.sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}
-.sidebar-bottom{padding:16px 0 22px 0;border-top:1px solid #334155;margin-top:auto}
-.main{margin-left:260px;padding:28px}
-.card{border:0;border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
-.btn-gold{background:var(--accent);border:0;color:#000;font-weight:700;border-radius:50px}
+<style>:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}body{background:var(--bg)}
+.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;top:0;left:0;color:#cbd5e1;z-index:1000;transition:0.3s;overflow-y:auto}
+.sidebar a{color:#94a3b8;text-decoration:none;display:flex;align-items:center;padding:12px 14px;border-radius:12px;margin-bottom:8px}.sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}
+.main{margin-left:260px;padding:28px}.card{border:0;border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.06)}.btn-gold{background:var(--accent);border:0;color:#000;font-weight:700;border-radius:50px}
+.hamburger{position:fixed;top:15px;left:15px;z-index:1100;background:var(--primary);color:white;border:0;border-radius:12px;padding:10px 14px;display:none}.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding-top:70px}.hamburger{display:block}.overlay.open{display:block}}
 </style></head><body>
-
-<div class="sidebar">
-  <div><h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">Chic Luxe</small><hr style="border-color:#334155"></div>
-  <div class="menu">
-    <a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a>
-    <a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a>
-    <a href="/ventes"><i class="bi bi-cart-check-fill me-2"></i>Ventes rapide</a>
-    <a href="/commande"><i class="bi bi-receipt me-2"></i>Commande / Facture</a>
-    <a href="/factures"><i class="bi bi-file-earmark-text me-2"></i>Factures</a>
-    <a href="/depenses"><i class="bi bi-cash-stack me-2"></i>Dépenses</a>
-    <a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a>
-    <a href="/categories" class="active"><i class="bi bi-tags me-2"></i>Catégories</a>
-    <a href="/statistiques"><i class="bi bi-graph-up me-2"></i>Statistiques</a>
-    <a href="/stock-faible"><i class="bi bi-exclamation-triangle me-2"></i>Stock faible</a>
-  </div>
-  <div class="sidebar-bottom">
-    <a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center;text-decoration:none;justify-content:center"><i class="bi bi-box-arrow-left me-2"></i>Déconnexion</a>
-  </div>
-</div>
-
-<div class="main">
-<h4 class="fw-bold mb-4">🏷️ Catégories</h4>
-<div id="cats"></div>
-<div class="card p-4 mt-4">
-<h5 class="fw-bold mb-3">📋 Détail par catégorie</h5>
-<div id="detail"></div>
-</div>
-</div>
-
+<button class="hamburger" onclick="toggleMenu()"><i class="bi bi-list fs-4"></i></button><div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<div class="sidebar" id="sidebar"><h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">Atlas</small><hr style="border-color:#334155">
+<a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a><a href="/categories" class="active" style="background:var(--accent);color:#000"><i class="bi bi-tags me-2"></i>Catégories</a><a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a><a href="/ventes"><i class="bi bi-cart-check-fill me-2"></i>Ventes</a><a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a><div style="margin-top:20px"><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center">Déconnexion</a></div></div>
+<div class="main"><h4 class="fw-bold">🏷️ Catégories - Atlas</h4><div id="cats"></div><div class="card p-4 mt-4"><h5 class="fw-bold">📋 Détail par catégorie</h5><div id="detail"></div></div></div>
 <script>
+function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open');}
 let boutique=localStorage.getItem('boutique')||'Boutique Bibi Shop';document.getElementById('bName').innerText=boutique;
-async function load(){
-let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();let stock=j.stock||[];
-let byCat={};stock.forEach(s=>{let cat=s.groupe||s.categorie||'Sans catégorie';if(!byCat[cat])byCat[cat]={qte:0,produits:0,achat:0,vente:0,items:[]};byCat[cat].qte+=Number(s.qte||0);byCat[cat].produits++;byCat[cat].achat+=Number(s.qte||0)*Number(s.achat||0);byCat[cat].vente+=Number(s.qte||0)*Number(s.vente||0);byCat[cat].items.push(s);});
-
-let h='';
-Object.keys(byCat).forEach(cat=>{
- let d=byCat[cat];
- h+=`<div class="card p-4 mb-3"><div class="row align-items-center">
-   <div class="col-md-3"><h5 class="fw-bold mb-1">${cat}</h5><span class="badge" style="background:var(--accent);color:#000">${d.produits} prod.</span></div>
-   <div class="col-md-2"><small class="text-muted">Quantité totale</small><br><b>${d.qte}</b></div>
-   <div class="col-md-2"><small class="text-muted">Valeur achat</small><br><b>${d.achat.toLocaleString()} FCFA</b></div>
-   <div class="col-md-2"><small class="text-muted">Valeur vente</small><br><b style="color:var(--primary)">${d.vente.toLocaleString()} FCFA</b></div>
-   <div class="col-md-3 text-end d-flex gap-1 justify-content-end flex-wrap">
-     <button class="btn btn-sm btn-light rounded-pill" onclick="renameCat('${cat.replace(/'/g,"\\'")}')">✏️ Renommer</button>
-     <button class="btn btn-sm btn-outline-danger rounded-pill" onclick="delCat('${cat.replace(/'/g,"\\'")}')">🗑️ Vider</button>
-   </div>
- </div></div>`;
-});
-document.getElementById('cats').innerHTML=h||'<p class="text-muted">Aucune catégorie</p>';
-
-let h2='';
-Object.keys(byCat).forEach(cat=>{
- h2+=`<h6 class="fw-bold mt-4" style="color:var(--primary)">${cat} (${byCat[cat].produits})</h6>
- <div class="table-responsive"><table class="table table-sm align-middle"><thead style="background:#f8fafc"><tr><th>Produit</th><th>Qté</th><th>Achat</th><th>Vente</th><th>Bénéf</th><th>Action</th></tr></thead><tbody>
- ${byCat[cat].items.map(p=>`
- <tr>
-  <td><b>${p.nom}</b></td>
-  <td>${p.qte} ${p.unite||''}</td>
-  <td>${Number(p.achat||0).toLocaleString()} FCFA</td>
-  <td class="fw-bold">${Number(p.vente||0).toLocaleString()} FCFA</td>
-  <td><span style="color:#10b981;font-weight:700">+${(Number(p.vente||0)-Number(p.achat||0)).toLocaleString()}</span></td>
-  <td>
-    <button class="btn btn-sm btn-gold rounded-pill px-3" onclick="recharger(${p.id},'${p.nom.replace(/'/g,"\\'")}')"><i class="bi bi-plus-circle"></i> Recharger</button>
-  </td>
- </tr>`).join('')}
- </tbody></table></div>`;
-});
-document.getElementById('detail').innerHTML=h2;
-}
-
-async function recharger(id,nom){
- let q=prompt('Recharger - Quantité pour '+nom+'?', '1');
- if(!q) return;
- q=parseFloat(q);
- if(q<=0){alert('Quantité invalide');return;}
- let res=await fetch('/api/mouvement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,boutique,produit:nom,type:'Rechargé',qte:q})});
- let j=await res.json();
- if(j.ok){ alert('✅ '+nom+' rechargé de '+q); load(); } else alert('Erreur');
-}
-
-async function renameCat(oldName){let n=prompt('Nouveau nom pour '+oldName+'?',oldName);if(!n||n==oldName)return;let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();for(let p of j.stock.filter(s=>(s.groupe||s.categorie)==oldName)){await fetch('/api/stock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...p,boutique,groupe:n})});}load();}
-async function delCat(cat){if(!confirm('Supprimer TOUS les produits de '+cat+'?'))return;let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();for(let p of j.stock.filter(s=>(s.groupe||s.categorie)==cat)){await fetch('/api/stock/'+p.id,{method:'DELETE'});}load();}
+async function load(){let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();let stock=j.stock||[];let byCat={};stock.forEach(s=>{let cat=s.groupe||'Sans catégorie';if(!byCat[cat])byCat[cat]={qte:0,produits:0,achat:0,vente:0,items:[]};byCat[cat].qte+=Number(s.qte||0);byCat[cat].produits++;byCat[cat].achat+=Number(s.qte||0)*Number(s.achat||0);byCat[cat].vente+=Number(s.qte||0)*Number(s.vente||0);byCat[cat].items.push(s);});let h='';Object.keys(byCat).forEach(cat=>{let d=byCat[cat];h+=`<div class="card p-4 mb-3"><div class="row align-items-center"><div class="col-md-3"><h5 class="fw-bold">${cat}</h5><span class="badge" style="background:var(--accent);color:#000">${d.produits} prod.</span></div><div class="col-md-2"><small>Qté</small><br><b>${d.qte}</b></div><div class="col-md-2"><small>Achat</small><br><b>${d.achat.toLocaleString()} FCFA</b></div><div class="col-md-2"><small>Vente</small><br><b>${d.vente.toLocaleString()} FCFA</b></div><div class="col-md-3 text-end"><button class="btn btn-sm btn-light rounded-pill" onclick="renameCat('${cat.replace(/'/g,"\\'")}')">✏️ Renommer</button></div></div></div>`});document.getElementById('cats').innerHTML=h||'<p>Aucune catégorie</p>';let h2='';Object.keys(byCat).forEach(cat=>{h2+=`<h6 class="fw-bold mt-4" style="color:var(--primary)">${cat} (${byCat[cat].produits})</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Produit</th><th>Qté</th><th>Achat</th><th>Vente</th><th>Bénéf</th><th>Action</th></tr></thead><tbody>${byCat[cat].items.map(p=>`<tr><td><b>${p.nom}</b></td><td>${p.qte}</td><td>${p.achat}</td><td class="fw-bold">${p.vente}</td><td style="color:#10b981;font-weight:700">+${(p.vente-p.achat).toLocaleString()}</td><td><button class="btn btn-sm btn-gold rounded-pill" onclick="recharger('${p._id}','${p.nom.replace(/'/g,"\\'")}')">+ Recharger</button></td></tr>`).join('')}</tbody></table></div>`});document.getElementById('detail').innerHTML=h2;}
+async function recharger(id,nom){let q=prompt('Recharger - Qté pour '+nom+'?','1');if(!q)return;q=parseFloat(q);await fetch('/api/mouvement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,boutique,produit:nom,type:'Rechargé',qte:q})});load();}
+async function renameCat(oldName){let n=prompt('Nouveau nom pour '+oldName+'?',oldName);if(!n||n==oldName)return;let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();for(let p of j.stock.filter(s=>s.groupe==oldName)){await fetch('/api/stock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:p._id,boutique,groupe:n,nom:p.nom,qte:p.qte,unite:p.unite,achat:p.achat,vente:p.vente})});}load();}
 load();
 </script></body></html>
