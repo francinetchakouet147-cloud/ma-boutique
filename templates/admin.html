@@ -14,7 +14,9 @@ body{background:#f5f7fb;margin:0}
 .btn-ham{display:flex;align-items:center;justify-content:center}
 .overlay.show{display:block}
 }
-</style></head><body>
+</style></head><link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#0d6efd">
+  <body>
 <button class="btn-ham" onclick="toggleMenu()"><i class="bi bi-list" style="font-size:26px"></i></button>
 <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 <div class="sidebar" id="sidebar"><h5>Boutique Aurélie</h5><p class="small">MongoDB Atlas</p><hr><button class="btn btn-light w-100 rounded-pill" onclick="location.href='/'">Déconnexion</button></div>
