@@ -1,55 +1,31 @@
-<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Statistiques</title>
-<link rel="manifest" href="/static/manifest.json">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<style>:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}body{background:var(--bg)}.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;padding:22px;color:#cbd5e1}.sidebar a{color:#94a3b8;text-decoration:none;display:block;padding:12px 14px;border-radius:12px;margin-bottom:8px}.sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}.main{margin-left:260px;padding:28px}.card{border:0;border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.06)}</style></head><body>
-<div class="sidebar"><h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">Chic Luxe</small><hr style="border-color:#334155"><a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a><a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a><a href="/categories"><i class="bi bi-tags me-2"></i>Catégories</a><a href="/statistiques" class="active"><i class="bi bi-graph-up me-2"></i>Statistiques</a><a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a><div style="position:absolute;bottom:20px;width:216px"><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center;text-decoration:none">Déconnexion</a></div></div>
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stats</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"><script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}body{background:var(--bg)}
+.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;padding:22px;top:0;left:0;color:#cbd5e1;z-index:1000;transition:0.3s}
+.sidebar a{color:#94a3b8;text-decoration:none;display:block;padding:12px 14px;border-radius:12px;margin-bottom:8px}.sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}
+.main{margin-left:260px;padding:20px 28px}.card{border:0;border-radius:18px;box-shadow:0 4px 20px rgba(0,0,0,.06)}
+.hamburger{position:fixed;top:15px;left:15px;z-index:1100;background:var(--primary);color:white;border:0;border-radius:12px;padding:10px 14px;display:none}
+.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding-top:70px}.hamburger{display:block}.overlay.open{display:block}}
+</style></head><body>
+<button class="hamburger" onclick="toggleMenu()"><i class="bi bi-list fs-4"></i></button>
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<div class="sidebar" id="sidebar"><h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">Atlas • Statistiques</small><hr style="border-color:#334155">
+<a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a><a href="/ventes"><i class="bi bi-cart-check-fill me-2"></i>Ventes</a><a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a><a href="/statistiques" class="active" style="background:var(--accent);color:#000;font-weight:700"><i class="bi bi-graph-up me-2"></i>Statistiques</a><a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a><a href="/depenses"><i class="bi bi-cash-stack me-2"></i>Dépenses</a><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center;margin-top:20px">Déconnexion</a></div>
+
 <div class="main">
-<h4 class="fw-bold mb-4">📈 Statistiques</h4>
-
-<div class="row g-3 mb-4">
-<div class="col-md-3"><div class="card p-4"><small class="text-muted">Valeur Achat Stock</small><h4 class="fw-bold" id="vAchat">0 FCFA</h4><small style="color:var(--accent)">Investi</small></div></div>
-<div class="col-md-3"><div class="card p-4" style="background:var(--primary);color:#fff"><small style="color:#94a3b8">Valeur Vente Stock</small><h4 class="fw-bold" id="vVente" style="color:var(--accent)">0 FCFA</h4><small>Potentiel</small></div></div>
-<div class="col-md-3"><div class="card p-4"><small class="text-muted">Bénéfice Potentiel</small><h4 class="fw-bold" style="color:#10b981" id="benef">0 FCFA</h4><small class="text-muted">Si tout vendu</small></div></div>
-<div class="col-md-3"><div class="card p-4"><small class="text-muted">Produits / Qté</small><h4 class="fw-bold" id="totalP">0 / 0</h4><small class="text-danger" id="alert">0 en rupture</small></div></div>
-</div>
-
-<div class="row g-3">
-<div class="col-lg-5"><div class="card p-4 h-100"><h6 class="fw-bold mb-3">Répartition par catégorie</h6><canvas id="catChart"></canvas></div></div>
-<div class="col-lg-7"><div class="card p-4 h-100"><h6 class="fw-bold mb-3">🔥 Top produits les plus rentables</h6><div class="table-responsive"><table class="table"><thead style="background:#f8fafc"><tr><th>Produit</th><th>Bénéf / unité</th><th>Stock</th><th>Bénéf total</th></tr></thead><tbody id="topList"></tbody></table></div></div></div>
-</div>
-
-<div class="card p-4 mt-3"><h6 class="fw-bold text-danger">⚠️ À recommander (stock < 5)</h6><div id="lowStock"></div></div>
-
+<h5 class="fw-bold">📊 Statistiques - Atlas</h5>
+<div class="row g-3 mt-2"><div class="col-md-3"><div class="card p-3 text-center"><small class="text-muted">TOTAL PRODUITS</small><h3 class="fw-bold" id="t1">0</h3></div></div><div class="col-md-3"><div class="card p-3 text-center"><small class="text-muted">QTÉ TOTALE</small><h3 class="fw-bold" id="t2">0</h3></div></div><div class="col-md-3"><div class="card p-3 text-center"><small class="text-muted">VALEUR VENTE</small><h3 class="fw-bold" id="t3">0</h3></div></div><div class="col-md-3"><div class="card p-3 text-center" style="background:var(--primary);color:#fff"><small style="color:var(--accent)">BÉNÉFICE POTENTIEL</small><h3 class="fw-bold" id="t4" style="color:var(--accent)">0</h3></div></div></div>
+<div class="row g-3 mt-3"><div class="col-md-6"><div class="card p-4"><h6 class="fw-bold">Répartition catégories</h6><canvas id="pie"></canvas></div></div><div class="col-md-6"><div class="card p-4"><h6 class="fw-bold">Top 10 produits en stock</h6><canvas id="bar"></canvas></div></div></div>
 </div>
 <script>
+function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open');}
 let boutique=localStorage.getItem('boutique')||'Boutique Bibi Shop';document.getElementById('bName').innerText=boutique;
-async function load(){
-let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();let stock=j.stock||[];
-let achat=0,vente=0,qte=0;
-let byCat={};
-stock.forEach(s=>{
- achat+=Number(s.qte||0)*Number(s.achat||0);
- vente+=Number(s.qte||0)*Number(s.vente||0);
- qte+=Number(s.qte||0);
- let cat=s.groupe||s.categorie||'Sans';
- if(!byCat[cat]) byCat[cat]=0;
- byCat[cat]+=Number(s.qte||0)*Number(s.vente||0);
-});
-document.getElementById('vAchat').innerText=achat.toLocaleString()+' FCFA';
-document.getElementById('vVente').innerText=vente.toLocaleString()+' FCFA';
-document.getElementById('benef').innerText=(vente-achat).toLocaleString()+' FCFA';
-document.getElementById('totalP').innerText=`${stock.length} / ${qte}`;
-let low=stock.filter(s=>Number(s.qte||0)<=5);
-document.getElementById('alert').innerText=`${low.length} en rupture`;
-document.getElementById('lowStock').innerHTML=low.length? low.map(p=>`<span class="badge bg-danger me-2 mb-2 p-2">${p.nom}: ${p.qte} ${p.unite||''}</span>`).join('') : '<small class="text-muted">Aucun, stock OK ✅</small>';
-
-let top=[...stock].sort((a,b)=>(b.vente-b.achat)-(a.vente-a.achat)).slice(0,5);
-document.getElementById('topList').innerHTML=top.map(p=>`<tr><td><b>${p.nom}</b><br><small class="text-muted">${p.groupe||''}</small></td><td style="color:#10b981;font-weight:700">+${(p.vente-p.achat).toLocaleString()} FCFA</td><td>${p.qte}</td><td class="fw-bold">${((p.vente-p.achat)*p.qte).toLocaleString()} FCFA</td></tr>`).join('');
-
-// chart
-let ctx=document.getElementById('catChart');
-new Chart(ctx,{type:'doughnut',data:{labels:Object.keys(byCat),datasets:[{data:Object.values(byCat),backgroundColor:['#1e293b','#f59e0b','#10b981','#3b82f6','#ef4444','#8b5cf6']}]},options:{plugins:{legend:{position:'bottom'}}}});
+async function load(){let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();let s=j.stock||[];let ach=s.reduce((a,b)=>a+b.qte*b.achat,0);let ven=s.reduce((a,b)=>a+b.qte*b.vente,0);
+document.getElementById('t1').innerText=s.length;document.getElementById('t2').innerText=s.reduce((a,b)=>a+Number(b.qte),0);document.getElementById('t3').innerText=ven.toLocaleString()+' FCFA';document.getElementById('t4').innerText=(ven-ach).toLocaleString()+' FCFA';
+let byCat={};s.forEach(x=>byCat[x.groupe]=(byCat[x.groupe]||0)+Number(x.qte));new Chart(document.getElementById('pie'),{type:'doughnut',data:{labels:Object.keys(byCat),datasets:[{data:Object.values(byCat),backgroundColor:['#1e293b','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4']}]},options:{plugins:{legend:{position:'bottom'}}}});
+let top=[...s].sort((a,b)=>b.qte-a.qte).slice(0,10);new Chart(document.getElementById('bar'),{type:'bar',data:{labels:top.map(x=>x.nom),datasets:[{label:'Qté',data:top.map(x=>x.qte),backgroundColor:'#f59e0b',borderRadius:8}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
 }
 load();
 </script></body></html>
