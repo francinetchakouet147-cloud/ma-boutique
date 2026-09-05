@@ -1,80 +1,37 @@
 <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Admin Aurélie</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-</head><body style="background:#f5f7fb">
-<div style="width:260px;background:#0d6efd;position:fixed;height:100vh;color:white;padding:20px">
-<h5>Boutique Aurélie</h5><p class="small">MongoDB Atlas • ma-boutique</p><hr><button class="btn btn-light w-100" onclick="location.href='/'">Déconnexion</button></div>
-<div style="margin-left:260px;padding:25px">
-<h3>Tous mes clients (<span id="count">0</span>) <button class="btn btn-primary float-end" data-bs-toggle="modal" data-bs-target="#modalAdd" onclick="openAdd()">+ Nouveau client</button></h3>
-<div class="card p-3 mt-3"><table class="table table-bordered"><thead><tr><th>Nom</th><th>Tél</th><th>Boutique</th><th>Pass</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="tbody"></tbody></table></div>
+<style>
+body{background:#f5f7fb;margin:0}
+.sidebar{width:260px;background:#0d6efd;position:fixed;height:100vh;color:white;padding:20px;left:0;top:0;z-index:1050;transition:0.3s}
+.main{margin-left:260px;padding:20px}
+.btn-ham{display:none;position:fixed;top:10px;left:10px;z-index:1060;background:#0d6efd;color:white;border:none;width:45px;height:45px;border-radius:12px}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1040}
+@media(max-width:768px){
+.sidebar{transform:translateX(-100%)}
+.sidebar.open{transform:translateX(0)}
+.main{margin-left:0;padding-top:65px}
+.btn-ham{display:flex;align-items:center;justify-content:center}
+.overlay.show{display:block}
+}
+</style></head><body>
+<button class="btn-ham" onclick="toggleMenu()"><i class="bi bi-list" style="font-size:26px"></i></button>
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<div class="sidebar" id="sidebar"><h5>Boutique Aurélie</h5><p class="small">MongoDB Atlas</p><hr><button class="btn btn-light w-100 rounded-pill" onclick="location.href='/'">Déconnexion</button></div>
+<div class="main">
+<h4>Tous mes clients (<span id="count">0</span>) <button class="btn btn-primary float-end rounded-pill" data-bs-toggle="modal" data-bs-target="#modalAdd" onclick="openAdd()">+ Nouveau</button></h4>
+<div class="card p-2 mt-3 border-0 shadow-sm rounded-4"><div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Nom</th><th>Tél</th><th>Boutique</th><th>Pass</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="tbody"></tbody></table></div></div>
 </div>
-
-<div class="modal fade" id="modalAdd"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 id="modalTitle">Nouveau client</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
-<div class="modal-body">
-<input type="hidden" id="edit_id">
-<input id="c_nom" class="form-control mb-2" placeholder="nom login (ex: bibi)">
-<input id="c_tel" class="form-control mb-2" placeholder="tel">
-<input id="c_boutique" class="form-control mb-2" placeholder="Nom Boutique (ex: Bibi Shop)">
-</div><div class="modal-footer"><button class="btn btn-primary w-100" onclick="saveClient()">Enregistrer dans Atlas</button></div></div></div></div>
-
+<div class="modal fade" id="modalAdd"><div class="modal-dialog"><div class="modal-content rounded-4"><div class="modal-header"><h5 id="modalTitle">Nouveau</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="edit_id"><input id="c_nom" class="form-control mb-2 rounded-pill" placeholder="nom login"><input id="c_tel" class="form-control mb-2 rounded-pill" placeholder="tel"><input id="c_boutique" class="form-control mb-2 rounded-pill" placeholder="Boutique"></div><div class="modal-footer"><button class="btn btn-primary w-100 rounded-pill" onclick="saveClient()">Enregistrer</button></div></div></div></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-let clientsData = [];
-function openAdd(){
- document.getElementById('edit_id').value='';
- document.getElementById('c_nom').value='';
- document.getElementById('c_tel').value='';
- document.getElementById('c_boutique').value='';
- document.getElementById('modalTitle').innerText='Nouveau client';
-}
-
-async function load(){
-  let r=await fetch('/api/clients');
-  let cs=await r.json();
-  clientsData = cs;
-  document.getElementById('count').innerText=cs.length;
-  let tbody=document.getElementById('tbody');
-  tbody.innerHTML='';
-  cs.forEach((c,i)=>{
-    tbody.innerHTML+=`<tr>
-    <td>${c.nom}</td><td>${c.tel}</td><td>${c.boutique}</td>
-    <td><span class="badge ${c.premiere?'bg-warning text-dark':'bg-dark'}">${c.pass}</span> <a href="#" onclick="resetPass('${c._id}');return false;">↻</a></td>
-    <td><span class="badge ${c.bloque?'bg-danger':'bg-success'}">${c.bloque?'Bloqué':'Actif'}</span></td>
-    <td>
-    <button class="btn btn-sm btn-info text-white" onclick="editClient(${i})"><i class="bi bi-pencil"></i></button>
-    <button class="btn btn-sm ${c.bloque?'btn-success':'btn-warning'}" onclick="toggleBlock('${c._id}',${c.bloque?1:0})">${c.bloque?'Débloquer':'Bloquer'}</button>
-    <button class="btn btn-sm btn-danger" onclick="suppr('${c._id}')">X</button></td></tr>`
-  });
-}
-function editClient(index){
- let c = clientsData[index];
- document.getElementById('edit_id').value=c._id;
- document.getElementById('c_nom').value=c.nom;
- document.getElementById('c_tel').value=c.tel;
- document.getElementById('c_boutique').value=c.boutique;
- document.getElementById('modalTitle').innerText='Modifier '+c.nom;
- new bootstrap.Modal(document.getElementById('modalAdd')).show();
-}
-async function saveClient(){
- let id=document.getElementById('edit_id').value.trim();
- let nom=document.getElementById('c_nom').value.toLowerCase().trim();
- let tel=document.getElementById('c_tel').value.trim();
- let boutique=document.getElementById('c_boutique').value.trim();
- if(!nom||!tel||!boutique) return alert('Remplis tout');
- try{
-  if(id){
-    await fetch(`/api/clients/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom,tel,boutique})});
-  } else {
-    await fetch('/api/clients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom,tel,boutique})});
-  }
-  let modalEl = document.getElementById('modalAdd');
-  let modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-  modal.hide();
-  load();
- }catch(e){ alert('Erreur: '+e.message); }
-}
-async function toggleBlock(id,b){ await fetch(`/api/clients/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({bloque:b?0:1})}); load(); }
-async function suppr(id){ if(!confirm('Supprimer ce client ?')) return; await fetch(`/api/clients/${id}`,{method:'DELETE'}); load(); }
-async function resetPass(id){ if(!confirm('Réinitialiser à 1234 ?')) return; await fetch(`/api/clients/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({reset:true})}); load(); }
+let clientsData=[];function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
+function openAdd(){document.getElementById('edit_id').value='';document.getElementById('c_nom').value='';document.getElementById('c_tel').value='';document.getElementById('c_boutique').value='';}
+async function load(){let r=await fetch('/api/clients');let cs=await r.json();clientsData=cs;document.getElementById('count').innerText=cs.length;let tb=document.getElementById('tbody');tb.innerHTML='';cs.forEach((c,i)=>{tb.innerHTML+=`<tr><td>${c.nom}</td><td>${c.tel}</td><td>${c.boutique}</td><td><span class="badge bg-dark">${c.pass}</span> <a href="#" onclick="resetPass('${c._id}');return false">↻</a></td><td><span class="badge ${c.bloque?'bg-danger':'bg-success'}">${c.bloque?'Bloqué':'Actif'}</span></td><td><button class="btn btn-sm btn-info" onclick="editClient(${i})"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm ${c.bloque?'btn-success':'btn-warning'}" onclick="toggleBlock('${c._id}',${c.bloque?1:0})"><i class="bi bi-lock"></i></button> <button class="btn btn-sm btn-danger" onclick="suppr('${c._id}')">X</button></td></tr>`});}
+function editClient(i){let c=clientsData[i];document.getElementById('edit_id').value=c._id;document.getElementById('c_nom').value=c.nom;document.getElementById('c_tel').value=c.tel;document.getElementById('c_boutique').value=c.boutique;new bootstrap.Modal(document.getElementById('modalAdd')).show();}
+async function saveClient(){let id=document.getElementById('edit_id').value.trim();let nom=document.getElementById('c_nom').value.toLowerCase().trim();let tel=document.getElementById('c_tel').value.trim();let boutique=document.getElementById('c_boutique').value.trim();if(!nom||!tel||!boutique)return alert('Remplis tout');if(id){await fetch(`/api/clients/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom,tel,boutique})});}else{await fetch('/api/clients',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom,tel,boutique})});}let el=document.getElementById('modalAdd');let m=bootstrap.Modal.getInstance(el)||new bootstrap.Modal(el);m.hide();load();}
+async function toggleBlock(id,b){await fetch(`/api/clients/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({bloque:b?0:1})});load();}
+async function suppr(id){if(!confirm('Supprimer?'))return;await fetch(`/api/clients/${id}`,{method:'DELETE'});load();}
+async function resetPass(id){if(!confirm('Reset 1234?'))return;await fetch(`/api/clients/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({reset:true})});load();}
 load();
 </script></body></html>
