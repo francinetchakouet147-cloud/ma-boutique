@@ -1,152 +1,57 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Historique - Recettes</title>
-<link rel="manifest" href="/static/manifest.json">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Historique</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
 <style>
 :root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc;--green:#10b981;--red:#ef4444}
 body{background:var(--bg);font-family:system-ui}
-.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;padding:22px;top:0;left:0;color:#cbd5e1;overflow-y:auto}
+.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;padding:22px;top:0;left:0;color:#cbd5e1;z-index:1000;transition:0.3s;overflow-y:auto}
 .sidebar a{color:#94a3b8;text-decoration:none;display:flex;align-items:center;padding:12px 14px;border-radius:12px;margin-bottom:8px}
 .sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}
-.main{margin-left:260px;padding:28px}
-.card{border:0;border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
+.main{margin-left:260px;padding:28px}.card{border:0;border-radius:20px;box-shadow:0 8px 30px rgba(0,0,0,.06)}
 .tab{padding:12px 24px;border-radius:50px;font-weight:700;cursor:pointer;background:#fff;border:1px solid #e2e8f0}
 .tab.active{background:var(--primary);color:#fff}
-.badge-vendu{background:var(--primary);color:#fff}
-.badge-recharge{background:#fef3c7;color:#92400e}
-.kpi-net{border-left:5px solid var(--primary);background:#fff}
-</style>
-</head>
-<body>
-<div class="sidebar">
-<h5 class="text-white fw-bold" id="bName">MA BOUTIQUE</h5><small style="color:var(--accent)">Chic Luxe</small>
-<hr style="border-color:#334155">
-<a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a>
-<a href="/ventes"><i class="bi bi-cart-check-fill me-2"></i>Ventes rapide</a>
-<a href="/commande"><i class="bi bi-receipt me-2"></i>Commande / Facture</a>
-<a href="/factures"><i class="bi bi-file-earmark-text me-2"></i>Factures</a>
-<a href="/depenses"><i class="bi bi-cash-stack me-2"></i>Dépenses</a>
-<a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a>
-<a href="/categories"><i class="bi bi-tags me-2"></i>Catégories</a>
-<a href="/statistiques"><i class="bi bi-graph-up me-2"></i>Statistiques</a>
-<a href="/stock-faible"><i class="bi bi-exclamation-triangle me-2"></i>Stock faible</a>
-<a href="/historique" class="active"><i class="bi bi-clock-history me-2"></i>Historique</a>
-<div style="position:absolute;bottom:20px;width:216px"><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center;text-decoration:none">Déconnexion</a></div>
-</div>
+.badge-vendu{background:var(--primary);color:#fff}.badge-recharge{background:#fef3c7;color:#92400e}.kpi-net{border-left:5px solid var(--primary);background:#fff}
+.hamburger{position:fixed;top:15px;left:15px;z-index:1100;background:var(--primary);color:white;border:0;border-radius:12px;padding:10px 14px;display:none}
+.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding-top:70px}.hamburger{display:block}.overlay.open{display:block}}
+</style></head><body>
+<button class="hamburger" onclick="toggleMenu()"><i class="bi bi-list fs-4"></i></button>
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<div class="sidebar" id="sidebar">
+<h5 class="text-white fw-bold" id="bName">MA BOUTIQUE</h5><small style="color:var(--accent)">Atlas</small><hr style="border-color:#334155">
+<a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a><a href="/ventes"><i class="bi bi-cart-check-fill me-2"></i>Ventes rapide</a><a href="/commande"><i class="bi bi-receipt me-2"></i>Commande</a><a href="/factures"><i class="bi bi-file-earmark-text me-2"></i>Factures</a><a href="/depenses"><i class="bi bi-cash-stack me-2"></i>Dépenses</a><a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a><a href="/categories"><i class="bi bi-tags me-2"></i>Catégories</a><a href="/statistiques"><i class="bi bi-graph-up me-2"></i>Statistiques</a><a href="/stock-faible"><i class="bi bi-exclamation-triangle me-2"></i>Stock faible</a><a href="/historique" class="active"><i class="bi bi-clock-history me-2"></i>Historique</a><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center;margin-top:20px">Déconnexion</a></div>
 
 <div class="main">
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-<h4 class="fw-bold">📜 Recettes - Bénéfice RÉEL</h4>
-<div class="d-flex gap-2">
-<div class="tab active" id="tJour" onclick="setTab('jour')">JOUR</div>
-<div class="tab" id="tSem" onclick="setTab('semaine')">SEMAINE</div>
-<div class="tab" id="tMois" onclick="setTab('mois')">MOIS</div>
+<h4 class="fw-bold">📜 Recettes - Atlas</h4>
+<div class="d-flex gap-2"><div class="tab active" id="tJour" onclick="setTab('jour')">JOUR</div><div class="tab" id="tSem" onclick="setTab('semaine')">SEMAINE</div><div class="tab" id="tMois" onclick="setTab('mois')">MOIS</div></div>
 </div>
-</div>
-
-<!-- KPI AVEC BENEFICE REEL -->
 <div class="row g-3 my-4" id="kpi"></div>
-
-<div class="card p-4" style="width:100%">
-<div class="d-flex justify-content-between mb-3 flex-wrap gap-2">
-<input id="search" class="form-control" style="max-width:300px;border-radius:50px;background:#f8fafc;border:0" placeholder="🔍 Rechercher produit..." oninput="render()">
-<span class="badge bg-light text-dark border" id="dateInfo" style="padding:10px 16px;border-radius:50px"></span>
+<div class="card p-4"><div class="d-flex justify-content-between mb-3 flex-wrap gap-2"><input id="search" class="form-control" style="max-width:300px;border-radius:50px;background:#f8fafc;border:0" placeholder="🔍 Rechercher produit..." oninput="render()"><span class="badge bg-light text-dark border" id="dateInfo" style="padding:10px 16px;border-radius:50px"></span></div><div id="content"></div></div>
 </div>
-<div id="content"></div>
-</div>
-</div>
-
 <script>
-let boutique = localStorage.getItem('boutique') || 'Boutique Bibi Shop';
-document.getElementById('bName').innerText = boutique;
-let DATA = {jour:[],semaine:[],mois:[], dep_jour:[], dep_semaine:[], benef_jour_brut:0, benef_jour_net:0, benef_semaine_brut:0, benef_semaine_net:0, dep_jour_total:0, dep_semaine_total:0};
-let current='jour';
-
-async function load(){
- let r = await fetch('/api/historique?boutique='+encodeURIComponent(boutique));
- DATA = await r.json();
- render();
-}
-
-function setTab(t){
- current=t;
- document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));
- document.getElementById(t=='jour'?'tJour':t=='semaine'?'tSem':'tMois').classList.add('active');
- render();
-}
-
-function calc(list){
- let vendu = list.filter(h=>h.type=='Vendu');
- let recharge = list.filter(h=>h.type=='Rechargé');
- let recette = vendu.reduce((s,h)=> s + (h.vente*h.qte), 0);
- let benef = vendu.reduce((s,h)=> s + (h.vente-h.achat)*h.qte, 0);
- let nbV = vendu.reduce((s,h)=>s+h.qte,0);
- let nbR = recharge.reduce((s,h)=>s+h.qte,0);
- let map={};
- vendu.forEach(h=>{map[h.produit]=(map[h.produit]||0)+h.qte});
- let top = Object.entries(map).sort((a,b)=>b[1]-a[1])[0];
- return {recette, benef, nbV, nbR, top};
-}
-
+function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open');}
+let boutique=localStorage.getItem('boutique')||'Boutique Bibi Shop';document.getElementById('bName').innerText=boutique;
+let DATA={jour:[],semaine:[],mois:[],dep_jour:[],dep_semaine:[],benef_jour_brut:0,benef_jour_net:0,benef_semaine_brut:0,benef_semaine_net:0,dep_jour_total:0,dep_semaine_total:0};let current='jour';
+async function load(){let r=await fetch('/api/historique?boutique='+encodeURIComponent(boutique));DATA=await r.json();render();}
+function setTab(t){current=t;document.querySelectorAll('.tab').forEach(e=>e.classList.remove('active'));document.getElementById(t=='jour'?'tJour':t=='semaine'?'tSem':'tMois').classList.add('active');render();}
+function calc(list){let vendu=list.filter(h=>h.type=='Vendu');let recette=vendu.reduce((s,h)=>s+h.vente*h.qte,0);let benef=vendu.reduce((s,h)=>s+(h.vente-h.achat)*h.qte,0);let nbV=vendu.reduce((s,h)=>s+h.qte,0);return {recette,benef,nbV};}
 function render(){
- let search = document.getElementById('search').value.toLowerCase();
- let html='';
-
- if(current=='mois'){
-   let totalRecMois=0, totalBenBrut=0, totalDep=0, totalBenNet=0;
-   DATA.mois.forEach(s=>{
-     totalRecMois+= s.items.filter(x=>x.type=='Vendu').reduce((a,b)=>a+b.vente*b.qte,0);
-     totalBenBrut+= s.benef_brut || s.benef || 0;
-     totalDep+= s.dep_total || 0;
-     totalBenNet+= s.benef_net || 0;
-   });
-   document.getElementById('kpi').innerHTML = `
-     <div class="col-md-3"><div class="card p-4"><small class="text-muted">Recette MOIS</small><h4 class="fw-bold">${totalRecMois.toLocaleString()} FCFA</h4></div></div>
-     <div class="col-md-3"><div class="card p-4"><small class="text-muted">Bénéfice BRUT</small><h4 class="fw-bold" style="color:var(--green)">${totalBenBrut.toLocaleString()} FCFA</h4></div></div>
-     <div class="col-md-3"><div class="card p-4"><small class="text-muted">Dépenses MOIS</small><h4 class="fw-bold text-danger">-${totalDep.toLocaleString()} FCFA</h4></div></div>
-     <div class="col-md-3"><div class="card p-4 kpi-net" style="background:var(--primary);color:#fff"><small style="color:#94a3b8">Bénéfice RÉEL MOIS</small><h4 class="fw-bold" style="color:var(--accent)">${totalBenNet.toLocaleString()} FCFA</h4></div></div>`;
-   document.getElementById('dateInfo').innerText="4 dernières semaines (28 jours)";
-
-   DATA.mois.forEach(s=>{
-     let rec = s.items.filter(x=>x.type=='Vendu').reduce((a,b)=>a+b.vente*b.qte,0);
-     html+=`<div class="card p-3 mb-3" style="background:#f8fafc"><div class="d-flex justify-content-between flex-wrap gap-2"><b>${s.label}</b><span><span class="badge bg-dark me-1">Recette ${rec.toLocaleString()}</span><span class="badge bg-success me-1">Brut ${s.benef_brut.toLocaleString()}</span><span class="badge bg-danger me-1">Dép -${s.dep_total.toLocaleString()}</span><span class="badge" style="background:var(--primary);color:var(--accent)">RÉEL ${s.benef_net.toLocaleString()} FCFA</span></span></div>
-     <div class="table-responsive mt-2"><table class="table table-sm mb-0"><thead><tr><th>Date</th><th>Heure</th><th>Produit / Motif</th><th>Type</th><th>Qté / Montant</th><th>Recette</th></tr></thead><tbody>
-     ${s.items.filter(h=>h.produit.toLowerCase().includes(search)).map(h=>`<tr><td>${h.date}</td><td>${h.heure}</td><td>${h.produit}</td><td><span class="badge ${h.type=='Vendu'?'badge-vendu':'badge-recharge'}">${h.type}</span></td><td>${h.qte}</td><td>${h.type=='Vendu'?(h.vente*h.qte).toLocaleString()+' FCFA':'-'}</td></tr>`).join('')}
-     ${(s.depenses||[]).map(d=>`<tr style="background:#fee2e2"><td>${d.date}</td><td>${d.heure}</td><td>${d.motif} (${d.categorie})</td><td><span class="badge bg-danger">Dépense</span></td><td>-${d.montant.toLocaleString()} FCFA</td><td>-</td></tr>`).join('')}
-     </tbody></table></div></div>`;
-   });
-   if(!DATA.mois.length) html='<p class="text-center text-muted py-5">Aucune donnée ce mois</p>';
-
- } else {
-   let list = current=='jour'?DATA.jour:DATA.semaine;
-   let filtered = list.filter(h=>h.produit.toLowerCase().includes(search));
-   let c = calc(current=='jour'?DATA.jour:DATA.semaine);
-   let brut = current=='jour'?DATA.benef_jour_brut:DATA.benef_semaine_brut;
-   let dep = current=='jour'?DATA.dep_jour_total:DATA.dep_semaine_total;
-   let net = current=='jour'?DATA.benef_jour_net:DATA.benef_semaine_net;
-
-   document.getElementById('kpi').innerHTML = `
-     <div class="col-md-3"><div class="card p-4"><small class="text-muted">Recette ${current.toUpperCase()}</small><h4 class="fw-bold" style="color:var(--primary)">${c.recette.toLocaleString()} FCFA</h4><small>Vendu: ${c.nbV} / Rechargé: ${c.nbR}</small></div></div>
-     <div class="col-md-3"><div class="card p-4"><small class="text-muted">Bénéfice BRUT ${current.toUpperCase()}</small><h4 class="fw-bold" style="color:var(--green)">${brut.toLocaleString()} FCFA</h4><small>Plus vendu: <b>${c.top?c.top[0]+' ('+c.top[1]+')':'-'}</b></small></div></div>
-     <div class="col-md-3"><div class="card p-4"><small class="text-muted">Dépenses ${current.toUpperCase()}</small><h4 class="fw-bold text-danger">-${dep.toLocaleString()} FCFA</h4><small>${current=='jour'?DATA.dep_jour.length:DATA.dep_semaine.length} dépenses</small></div></div>
-     <div class="col-md-3"><div class="card p-4 kpi-net" style="background:var(--primary);color:#fff"><small style="color:#94a3b8">Bénéfice RÉEL ${current.toUpperCase()}</small><h4 class="fw-bold" style="color:var(--accent)">${net.toLocaleString()} FCFA</h4><small style="color:#cbd5e1">${brut.toLocaleString()} - ${dep.toLocaleString()}</small></div></div>`;
-
-   document.getElementById('dateInfo').innerText = current=='jour'?`Aujourd'hui ${new Date().toLocaleDateString('fr-FR')} - se vide à minuit`:`7 derniers jours (${DATA.semaine.length} mouvements)`;
-
-   let depList = current=='jour'?DATA.dep_jour:DATA.dep_semaine;
-   html=`<div class="table-responsive"><table class="table align-middle"><thead style="background:#f8fafc"><tr><th>Heure</th><th>Produit / Motif</th><th>Groupe</th><th>Type</th><th>Qté</th><th>Achat</th><th>Vente</th><th>Recette / Montant</th><th>Bénéf</th></tr></thead><tbody>
-   ${filtered.map(h=>`<tr style="border-left:4px solid ${h.type=='Vendu'?'#1e293b':'#f59e0b'}"><td>${h.heure}</td><td><b>${h.produit}</b></td><td>${h.groupe||''}</td><td><span class="badge ${h.type=='Vendu'?'badge-vendu':'badge-recharge'}">${h.type}</span></td><td>${h.qte}</td><td>${Number(h.achat).toLocaleString()}</td><td class="fw-bold">${Number(h.vente).toLocaleString()}</td><td class="fw-bold">${h.type=='Vendu'?(h.vente*h.qte).toLocaleString()+' FCFA':'-'}</td><td style="color:var(--green);font-weight:700">${h.type=='Vendu'?((h.vente-h.achat)*h.qte).toLocaleString():0}</td></tr>`).join('')}
-   ${depList.filter(d=>search==''||d.motif.toLowerCase().includes(search)).map(d=>`<tr style="border-left:4px solid var(--red);background:#fef2f2"><td>${d.heure}</td><td><b>${d.motif}</b> <small>(${d.categorie})</small></td><td>Dépense</td><td><span class="badge bg-danger">Dépense</span></td><td>-</td><td>-</td><td>-</td><td class="fw-bold text-danger">-${d.montant.toLocaleString()} FCFA</td><td class="fw-bold text-danger">-${d.montant.toLocaleString()}</td></tr>`).join('')}
-   </tbody></table></div>`;
-   if(!filtered.length &&!depList.length) html=`<p class="text-center text-muted py-5">Aucune vente pour ce ${current}</p>`;
- }
- document.getElementById('content').innerHTML=html;
+let search=document.getElementById('search').value.toLowerCase(); let html='';
+if(current=='mois'){
+let totalRecMois=0,totalBenBrut=0,totalDep=0,totalBenNet=0;
+DATA.mois.forEach(s=>{totalRecMois+=s.items.filter(x=>x.type=='Vendu').reduce((a,b)=>a+b.vente*b.qte,0);totalBenBrut+=s.benef_brut||0;totalDep+=s.dep_total||0;totalBenNet+=s.benef_net||0;});
+document.getElementById('kpi').innerHTML=`<div class="col-md-3"><div class="card p-4"><small class="text-muted">Recette MOIS</small><h4 class="fw-bold">${totalRecMois.toLocaleString()} FCFA</h4></div></div><div class="col-md-3"><div class="card p-4"><small class="text-muted">Bénéfice BRUT</small><h4 class="fw-bold" style="color:var(--green)">${totalBenBrut.toLocaleString()} FCFA</h4></div></div><div class="col-md-3"><div class="card p-4"><small class="text-muted">Dépenses MOIS</small><h4 class="fw-bold text-danger">-${totalDep.toLocaleString()} FCFA</h4></div></div><div class="col-md-3"><div class="card p-4 kpi-net" style="background:var(--primary);color:#fff"><small style="color:#94a3b8">Bénéfice RÉEL MOIS</small><h4 class="fw-bold" style="color:var(--accent)">${totalBenNet.toLocaleString()} FCFA</h4></div></div>`;
+document.getElementById('dateInfo').innerText="4 dernières semaines";
+DATA.mois.forEach(s=>{let rec=s.items.filter(x=>x.type=='Vendu').reduce((a,b)=>a+b.vente*b.qte,0);html+=`<div class="card p-3 mb-3" style="background:#f8fafc"><div class="d-flex justify-content-between flex-wrap gap-2"><b>${s.label}</b><span><span class="badge bg-dark me-1">Recette ${rec.toLocaleString()}</span><span class="badge bg-success me-1">Brut ${s.benef_brut.toLocaleString()}</span><span class="badge bg-danger me-1">Dép -${s.dep_total.toLocaleString()}</span><span class="badge" style="background:var(--primary);color:var(--accent)">RÉEL ${s.benef_net.toLocaleString()} FCFA</span></span></div></div>`;});
+if(!DATA.mois.length) html='<p class="text-center text-muted py-5">Aucune donnée ce mois</p>';
+}else{
+let list=current=='jour'?DATA.jour:DATA.semaine; let filtered=list.filter(h=>h.produit.toLowerCase().includes(search)); let c=calc(current=='jour'?DATA.jour:DATA.semaine); let brut=current=='jour'?DATA.benef_jour_brut:DATA.benef_semaine_brut; let dep=current=='jour'?DATA.dep_jour_total:DATA.dep_semaine_total; let net=current=='jour'?DATA.benef_jour_net:DATA.benef_semaine_net;
+document.getElementById('kpi').innerHTML=`<div class="col-md-3"><div class="card p-4"><small class="text-muted">Recette ${current.toUpperCase()}</small><h4 class="fw-bold" style="color:var(--primary)">${c.recette.toLocaleString()} FCFA</h4></div></div><div class="col-md-3"><div class="card p-4"><small class="text-muted">Bénéfice BRUT</small><h4 class="fw-bold" style="color:var(--green)">${brut.toLocaleString()} FCFA</h4></div></div><div class="col-md-3"><div class="card p-4"><small class="text-muted">Dépenses ${current.toUpperCase()}</small><h4 class="fw-bold text-danger">-${dep.toLocaleString()} FCFA</h4></div></div><div class="col-md-3"><div class="card p-4 kpi-net" style="background:var(--primary);color:#fff"><small style="color:#94a3b8">Bénéfice RÉEL</small><h4 class="fw-bold" style="color:var(--accent)">${net.toLocaleString()} FCFA</h4></div></div>`;
+document.getElementById('dateInfo').innerText=current=='jour'?`Aujourd'hui ${new Date().toLocaleDateString('fr-FR')}`:`7 derniers jours`;
+html=`<div class="table-responsive"><table class="table align-middle"><thead style="background:#f8fafc"><tr><th>Heure</th><th>Produit</th><th>Type</th><th>Qté</th><th>Recette</th><th>Bénéf</th></tr></thead><tbody>${filtered.map(h=>`<tr><td>${h.heure}</td><td><b>${h.produit}</b></td><td><span class="badge ${h.type=='Vendu'?'badge-vendu':'badge-recharge'}">${h.type}</span></td><td>${h.qte}</td><td>${h.type=='Vendu'?(h.vente*h.qte).toLocaleString()+' FCFA':'-'}</td><td style="color:var(--green);font-weight:700">${h.type=='Vendu'?((h.vente-h.achat)*h.qte).toLocaleString():0}</td></tr>`).join('')}</tbody></table></div>`;
+if(!filtered.length) html=`<p class="text-center text-muted py-5">Aucune vente pour ce ${current}</p>`;
+}
+document.getElementById('content').innerHTML=html;
 }
 load();
-</script>
-</body>
-</html>
+</script></body></html>
