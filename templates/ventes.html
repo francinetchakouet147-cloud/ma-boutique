@@ -1,68 +1,21 @@
 <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ventes</title>
-<link rel="manifest" href="/static/manifest.json">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-<style>:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}body{background:var(--bg)}.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;padding:22px;top:0;left:0;color:#cbd5e1;z-index:10}.sidebar a{color:#94a3b8;text-decoration:none;display:block;padding:12px 14px;border-radius:12px;margin-bottom:8px}.sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}.main{margin-left:260px;padding:20px 28px}.card{border:0;border-radius:18px;box-shadow:0 4px 20px rgba(0,0,0,.06)}.btn-vendre{background:var(--primary);color:#fff;border-radius:50px;font-weight:700;padding:8px 18px;border:0;width:100%}</style></head><body>
-<div class="sidebar"><h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">BIBI SHOP • Ventes</small><hr style="border-color:#334155">
-<a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a><a href="/ventes" class="active" style="background:var(--accent);color:#000;font-weight:700"><i class="bi bi-cart-check-fill me-2"></i>Ventes</a><a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a><a href="/categories"><i class="bi bi-tags me-2"></i>Catégories</a><a href="/statistiques"><i class="bi bi-graph-up me-2"></i>Statistiques</a><a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a><a href="/stock-faible"><i class="bi bi-exclamation-triangle me-2"></i>Stock faible</a>
-<div style="position:absolute;bottom:20px;width:216px"><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center;text-decoration:none">Déconnexion</a></div></div>
-
-<div class="main">
-<h5 class="fw-bold mb-0"><i class="bi bi-cart-check-fill me-2"></i>Ventes - Clique pour vendre</h5><small class="text-muted">Tu vends, les détails s'affichent direct en bas</small>
-
-<div class="row g-3 mt-2" id="prodList"></div>
-
-<!-- RECETTE + DETAILS -->
-<div class="card p-4 mt-4">
-<div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
-<div><small class="text-muted fw-bold" style="letter-spacing:1px">RECETTE AUJOURD'HUI</small><h3 class="fw-bold mb-0" id="recJour">0 FCFA</h3><small id="detailJour" class="text-muted">0 ventes • Bénéf 0 FCFA</small></div>
-<div><span class="badge rounded-pill" id="lastSale" style="background:#e0f2fe;color:#0c4a6e;padding:8px 14px;display:none"></span></div>
-</div>
-
-<h6 class="fw-bold mt-3"><i class="bi bi-list-check me-2"></i>Détail des ventes du jour par catégorie</h6>
-<div class="table-responsive">
-<table class="table table-sm align-middle mt-2">
-<thead style="background:#f8fafc"><tr><th>Catégorie</th><th>Produit</th><th>Qte vendue</th><th>Prix Achat</th><th>Prix Vente</th><th>Recette</th><th>Bénéf</th></tr></thead>
-<tbody id="detailTable"><tr><td colspan="7" class="text-muted text-center p-3">Aucune vente aujourd'hui</td></tr></tbody>
-</table>
-</div>
-</div>
-</div>
-
+<style>:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}body{background:var(--bg)}
+.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;padding:22px;top:0;left:0;color:#cbd5e1;z-index:1000;transition:0.3s}
+.sidebar a{color:#94a3b8;text-decoration:none;display:block;padding:12px 14px;border-radius:12px;margin-bottom:8px}.sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}
+.main{margin-left:260px;padding:20px 28px}.card{border:0;border-radius:18px;box-shadow:0 4px 20px rgba(0,0,0,.06)}.btn-vendre{background:var(--primary);color:#fff;border-radius:50px;font-weight:700;padding:8px 18px;border:0;width:100%}
+.hamburger{position:fixed;top:15px;left:15px;z-index:1100;background:var(--primary);color:white;border:0;border-radius:12px;padding:10px 14px;display:none}.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding-top:70px}.hamburger{display:block}.overlay.open{display:block}}
+</style></head><body>
+<button class="hamburger" onclick="toggleMenu()"><i class="bi bi-list fs-4"></i></button><div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<div class="sidebar" id="sidebar"><h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">ATLAS • Ventes</small><hr style="border-color:#334155">
+<a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a><a href="/ventes" class="active" style="background:var(--accent);color:#000;font-weight:700"><i class="bi bi-cart-check-fill me-2"></i>Ventes</a><a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a><a href="/categories"><i class="bi bi-tags me-2"></i>Catégories</a><a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a><a href="/stock-faible"><i class="bi bi-exclamation-triangle me-2"></i>Stock faible</a><div style="margin-top:20px"><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center">Déconnexion</a></div></div>
+<div class="main"><h5 class="fw-bold">Ventes - Clique pour vendre</h5><div class="row g-3 mt-2" id="prodList"></div><div class="card p-4 mt-4"><div class="d-flex justify-content-between flex-wrap gap-2 mb-3"><div><small class="text-muted fw-bold">RECETTE AUJOURD'HUI</small><h3 class="fw-bold" id="recJour">0 FCFA</h3><small id="detailJour" class="text-muted">0 ventes • Bénéf 0 FCFA</small></div><span class="badge rounded-pill" id="lastSale" style="background:#e0f2fe;color:#0c4a6e;padding:8px 14px;display:none"></span></div><h6 class="fw-bold">Détail des ventes du jour</h6><div class="table-responsive"><table class="table table-sm mt-2"><thead><tr><th>Catégorie</th><th>Produit</th><th>Qte vendue</th><th>Achat</th><th>Vente</th><th>Recette</th><th>Bénéf</th></tr></thead><tbody id="detailTable"></tbody></table></div></div></div>
 <script>
+function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open');}
 let boutique=localStorage.getItem('boutique')||'Boutique Bibi Shop';document.getElementById('bName').innerText=boutique;let stock=[];
-async function load(){let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();stock=j.stock;let html='';stock.forEach(p=>{let col=p.qte<=5?'#ef4444':p.qte<=10?'#f59e0b':'#10b981';html+=`<div class="col-md-6 col-xl-4"><div class="card p-3 h-100" style="border-left:5px solid ${col}"><div class="d-flex justify-content-between"><b>${p.nom}</b><span class="badge" style="background:#f1f5f9;color:#1e293b;font-size:10px">${p.groupe}</span></div><small class="text-muted">${p.qte} ${p.unite} en stock • Vente ${p.vente} FCFA</small><div class="d-flex gap-2 mt-3"><input type="number" id="qte-${p.id}" value="1" min="1" max="${p.qte}" class="form-control rounded-pill" style="width:75px"><button class="btn-vendre" onclick="vendre(${p.id},'${p.nom.replace(/'/g,"\\'")}')"><i class="bi bi-cart-check"></i> Vendre</button></div></div></div>`});document.getElementById('prodList').innerHTML=html;loadRecette();}
-async function vendre(id,nom){let qte=parseFloat(document.getElementById('qte-'+id).value)||1;let prod=stock.find(s=>s.id==id);if(prod.qte<qte){alert('Stock insuffisant!');return;}let r=await fetch('/api/mouvement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,boutique,produit:nom,type:'Vendu',qte})});let j=await r.json();if(j.ok){document.getElementById('lastSale').style.display='inline-block';document.getElementById('lastSale').innerText=`✅ ${qte} x ${nom} = ${(qte*prod.vente).toLocaleString()} FCFA`;load();}}
-
-async function loadRecette(){
- let r=await fetch('/api/historique?boutique='+encodeURIComponent(boutique));
- let d=await r.json();
- let ventesJour = d.jour.filter(h=>h.type=='Vendu');
- let recette = ventesJour.reduce((a,b)=>a+b.vente*b.qte,0);
- let benef = ventesJour.reduce((a,b)=>a+(b.vente-b.achat)*b.qte,0);
- let nb = ventesJour.reduce((a,b)=>a+b.qte,0);
- document.getElementById('recJour').innerText=recette.toLocaleString()+' FCFA';
- document.getElementById('detailJour').innerText=`${nb} articles vendus aujourd'hui • Bénéf ${benef.toLocaleString()} FCFA`;
-
- // GROUPER PAR PRODUIT POUR DETAIL
- let group={};
- ventesJour.forEach(v=>{
-   if(!group[v.produit]) group[v.produit]={qte:0, achat:v.achat, vente:v.vente, groupe:v.groupe||'Autre', recette:0, benef:0};
-   group[v.produit].qte+=v.qte;
-   group[v.produit].recette+=v.qte*v.vente;
-   group[v.produit].benef+=v.qte*(v.vente-v.achat);
- });
- let rows='';
- let byCat={};
- Object.entries(group).forEach(([nom,data])=>{
-   if(!byCat[data.groupe]) byCat[data.groupe]=[];
-   byCat[data.groupe].push({nom,...data});
- });
- Object.entries(byCat).forEach(([cat,items])=>{
-   items.forEach(it=>{
-     rows+=`<tr><td><span class="badge rounded-pill" style="background:#f1f5f9;color:#1e293b">${cat}</span></td><td><b>${it.nom}</b></td><td>${it.qte}</td><td>${it.achat.toLocaleString()} FCFA</td><td>${it.vente.toLocaleString()} FCFA</td><td><b>${it.recette.toLocaleString()} FCFA</b></td><td style="color:#10b981;font-weight:700">+${it.benef.toLocaleString()} FCFA</td></tr>`;
-   });
- });
- document.getElementById('detailTable').innerHTML=rows||'<tr><td colspan="7" class="text-muted text-center p-3">Aucune vente aujourd\'hui</td></tr>';
-}
+async function load(){let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();stock=j.stock;let html='';stock.forEach(p=>{let col=p.qte<=5?'#ef4444':p.qte<=10?'#f59e0b':'#10b981';html+=`<div class="col-md-6 col-xl-4"><div class="card p-3 h-100" style="border-left:5px solid ${col}"><div class="d-flex justify-content-between"><b>${p.nom}</b><span class="badge" style="background:#f1f5f9;color:#1e293b;font-size:10px">${p.groupe}</span></div><small class="text-muted">${p.qte} ${p.unite} • ${p.vente} FCFA</small><div class="d-flex gap-2 mt-3"><input type="number" id="qte-${p._id}" value="1" min="1" max="${p.qte}" class="form-control rounded-pill" style="width:75px"><button class="btn-vendre" onclick="vendre('${p._id}','${p.nom.replace(/'/g,"\\'")}')"><i class="bi bi-cart-check"></i> Vendre</button></div></div></div>`});document.getElementById('prodList').innerHTML=html;loadRecette();}
+async function vendre(id,nom){let qte=parseFloat(document.getElementById('qte-'+id).value)||1;let prod=stock.find(s=>s._id==id);if(prod.qte<qte){alert('Stock insuffisant!');return;}await fetch('/api/mouvement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,boutique,produit:nom,type:'Vendu',qte})});load();}
+async function loadRecette(){let r=await fetch('/api/historique?boutique='+encodeURIComponent(boutique));let d=await r.json();let ventesJour=d.jour.filter(h=>h.type=='Vendu');let recette=ventesJour.reduce((a,b)=>a+b.vente*b.qte,0);let benef=ventesJour.reduce((a,b)=>a+(b.vente-b.achat)*b.qte,0);let nb=ventesJour.reduce((a,b)=>a+b.qte,0);document.getElementById('recJour').innerText=recette.toLocaleString()+' FCFA';document.getElementById('detailJour').innerText=`${nb} vendus • Bénéf ${benef.toLocaleString()}`;let group={};ventesJour.forEach(v=>{if(!group[v.produit])group[v.produit]={qte:0,achat:v.achat,vente:v.vente,groupe:v.groupe||'Autre',recette:0,benef:0};group[v.produit].qte+=v.qte;group[v.produit].recette+=v.qte*v.vente;group[v.produit].benef+=v.qte*(v.vente-v.achat);});let rows='';Object.entries(group).forEach(([nom,data])=>{rows+=`<tr><td>${data.groupe}</td><td><b>${nom}</b></td><td>${data.qte}</td><td>${data.achat}</td><td>${data.vente}</td><td><b>${data.recette.toLocaleString()}</b></td><td style="color:#10b981;font-weight:700">+${data.benef.toLocaleString()}</td></tr>`});document.getElementById('detailTable').innerHTML=rows||'<tr><td colspan=7 class=text-center> Aucune vente </td></tr>';}
 load();
 </script></body></html>
