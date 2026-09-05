@@ -7,7 +7,9 @@
 .hamburger{position:fixed;top:15px;left:15px;z-index:1100;background:var(--primary);color:white;border:0;border-radius:12px;padding:10px 14px;display:none}
 .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999}
 @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding-top:70px}.hamburger{display:block}.overlay.open{display:block}}
-</style></head><body>
+</style></head><link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#0d6efd">
+  <body>
 <button class="hamburger" onclick="toggleMenu()"><i class="bi bi-list fs-4"></i></button><div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 <div class="sidebar" id="sidebar">
 <h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">ATLAS • Chic Luxe</small><hr style="border-color:#334155">
