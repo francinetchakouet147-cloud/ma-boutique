@@ -1,38 +1,25 @@
 from flask import Flask, render_template, request, jsonify
-import sqlite3, os, json
+import os, json
 from datetime import datetime, timedelta
+from pymongo import MongoClient
+from bson import ObjectId
 
 app = Flask(__name__)
-DB='stock.db'
 
-def db():
-    con=sqlite3.connect(DB)
-    con.row_factory=sqlite3.Row
-    return con
+# --- CONNEXION MONGODB ATLAS ---
+MONGO_URI = os.environ.get("MONGODB_URI", "MET_TON_LIEN_ICI_TEMPORAIREMENT")
+client_mongo = MongoClient(MONGO_URI)
+db_mongo = client_mongo["ma-boutique"]
+clients_col = db_mongo["clients"]
+stock_col = db_mongo["stock"]
+mouv_col = db_mongo["mouvements"]
+factures_col = db_mongo["factures"]
+depenses_col = db_mongo["depenses"]
 
 def init_db():
-    con=db(); c=con.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS clients (id INTEGER PRIMARY KEY, nom TEXT UNIQUE, tel TEXT, boutique TEXT, pass TEXT, premiere INTEGER DEFAULT 1, bloque INTEGER DEFAULT 0)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS stock (id INTEGER PRIMARY KEY, boutique TEXT, groupe TEXT, nom TEXT, qte REAL, unite TEXT, achat REAL, vente REAL)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS mouvements (id INTEGER PRIMARY KEY, boutique TEXT, produit TEXT, groupe TEXT, type TEXT, qte REAL, achat REAL, vente REAL, date TEXT, heure TEXT, datetime TEXT)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS factures (id INTEGER PRIMARY KEY, boutique TEXT, num TEXT, client TEXT, tel TEXT, total INTEGER, produits TEXT, date TEXT)''')
-    c.execute('''CREATE TABLE IF NOT EXISTS depenses (id INTEGER PRIMARY KEY, boutique TEXT, motif TEXT, categorie TEXT, montant REAL, date TEXT, heure TEXT, datetime TEXT)''')
-    try: c.execute('ALTER TABLE mouvements ADD COLUMN groupe TEXT')
-    except: pass
-    try: c.execute('ALTER TABLE mouvements ADD COLUMN achat REAL')
-    except: pass
-    try: c.execute('ALTER TABLE mouvements ADD COLUMN vente REAL')
-    except: pass
-    try: c.execute('ALTER TABLE mouvements ADD COLUMN heure TEXT')
-    except: pass
-    try: c.execute('ALTER TABLE mouvements ADD COLUMN datetime TEXT')
-    except: pass
-    c.execute('SELECT * FROM clients WHERE nom="aurelie"')
-    if not c.fetchone():
-        c.execute('INSERT INTO clients (nom,tel,boutique,pass,premiere) VALUES (?,?,?,?,?)',('aurelie','000','Admin','aurelie123',0))
-    con.commit(); con.close()
+    if not clients_col.find_one({"nom":"aurelie"}):
+        clients_col.insert_one({"nom":"aurelie","tel":"000","boutique":"Admin","pass":"aurelie123","premiere":0,"bloque":0})
 
-# On initialise la base au démarrage pour Render
 init_db()
 
 @app.route('/')
@@ -65,120 +52,126 @@ def depenses_page(): return render_template('depenses.html')
 def api_login():
     d=request.json; nom=d.get('nom','').lower(); pas=d.get('pass','')
     if nom=='aurelie' and pas=='aurelie123': return jsonify({'ok':True,'role':'admin'})
-    con=db(); c=con.cursor(); c.execute('SELECT * FROM clients WHERE nom=?', (nom,)); cl=c.fetchone(); con.close()
+    cl=clients_col.find_one({"nom": nom})
     if not cl: return jsonify({'ok':False,'msg':'Client inconnu'})
-    if cl['bloque']: return jsonify({'ok':False,'msg':'Compte bloqué'})
-    if cl['pass']!=pas: return jsonify({'ok':False,'msg':'Mauvais mot de passe'})
-    return jsonify({'ok':True,'role':'client','premiere':bool(cl['premiere']),'client':dict(cl)})
+    if cl.get('bloque'): return jsonify({'ok':False,'msg':'Compte bloqué'})
+    if cl.get('pass')!=pas: return jsonify({'ok':False,'msg':'Mauvais mot de passe'})
+    cl['_id']=str(cl['_id'])
+    return jsonify({'ok':True,'role':'client','premiere':bool(cl.get('premiere')), 'client':cl})
 
 @app.route('/api/clients')
 def api_clients():
-    con=db(); rows=con.execute('SELECT * FROM clients WHERE nom!="aurelie"').fetchall(); con.close()
-    return jsonify([dict(r) for r in rows])
+    rows=list(clients_col.find({"nom":{"$ne":"aurelie"}}))
+    for r in rows: r['_id']=str(r['_id']); r['id']=r['_id']
+    return jsonify(rows)
 
 @app.route('/api/clients', methods=['POST'])
 def api_add():
-    d=request.json; con=db()
-    try: con.execute('INSERT INTO clients (nom,tel,boutique,pass,premiere) VALUES (?,?,?,?,1)', (d['nom'].lower(),d['tel'],d['boutique'],'1234')); con.commit()
+    d=request.json
+    try:
+        clients_col.insert_one({"nom":d['nom'].lower(),"tel":d['tel'],"boutique":d['boutique'],"pass":"1234","premiere":1,"bloque":0})
     except: return jsonify({'ok':False,'msg':'Nom déjà utilisé'})
-    con.close(); return jsonify({'ok':True})
+    return jsonify({'ok':True})
 
-@app.route('/api/clients/<int:id>', methods=['PUT','DELETE'])
+@app.route('/api/clients/<id>', methods=['PUT','DELETE'])
 def api_edit(id):
-    con=db(); c=con.cursor()
-    if request.method=='DELETE': c.execute('DELETE FROM clients WHERE id=?',(id,))
+    try:
+        oid=ObjectId(id)
+    except:
+        # si ancien id int
+        clients_col.delete_one({"nom":id}); return jsonify({'ok':True})
+    if request.method=='DELETE':
+        clients_col.delete_one({"_id":oid})
     else:
         d=request.json
-        if 'bloque' in d: c.execute('UPDATE clients SET bloque=? WHERE id=?',(int(d['bloque']),id))
-        if 'reset' in d: c.execute('UPDATE clients SET pass="1234", premiere=1 WHERE id=?',(id,))
-        if 'newpass' in d: c.execute('UPDATE clients SET pass=?, premiere=0 WHERE id=?',(d['newpass'],id))
-        if 'nom' in d: c.execute('UPDATE clients SET nom=?, tel=?, boutique=? WHERE id=?',(d['nom'],d['tel'],d['boutique'],id))
-    con.commit(); con.close(); return jsonify({'ok':True})
+        if 'bloque' in d: clients_col.update_one({"_id":oid},{"$set":{"bloque":int(d['bloque'])}})
+        if 'reset' in d: clients_col.update_one({"_id":oid},{"$set":{"pass":"1234","premiere":1}})
+        if 'newpass' in d: clients_col.update_one({"_id":oid},{"$set":{"pass":d['newpass'],"premiere":0}})
+        if 'nom' in d: clients_col.update_one({"_id":oid},{"$set":{"nom":d['nom'],"tel":d['tel'],"boutique":d['boutique']}})
+    return jsonify({'ok':True})
 
+# Le reste stock/mouvements/factures/depenses je te le laisse en MongoDB aussi
 @app.route('/api/stock')
 def api_stock():
-    b=request.args.get('boutique',''); con=db()
-    stock=[dict(r) for r in con.execute('SELECT * FROM stock WHERE boutique=?',(b,)).fetchall()]
-    mouv=[dict(r) for r in con.execute('SELECT * FROM mouvements WHERE boutique=? ORDER BY id DESC',(b,)).fetchall()]
-    con.close(); return jsonify({'stock':stock,'mouvements':mouv})
+    b=request.args.get('boutique','')
+    stock=list(stock_col.find({"boutique":b})); 
+    for s in stock: s['id']=str(s['_id'])
+    mouv=list(mouv_col.find({"boutique":b}).sort("_id",-1))
+    for m in mouv: m['id']=str(m['_id'])
+    return jsonify({'stock':stock,'mouvements':mouv})
 
 @app.route('/api/stock', methods=['POST'])
 def api_stock_save():
-    d=request.json; con=db(); c=con.cursor()
-    if d.get('id'): c.execute('UPDATE stock SET groupe=?, nom=?, qte=?, unite=?, achat=?, vente=? WHERE id=?',(d['groupe'],d['nom'],d['qte'],d['unite'],d['achat'],d['vente'],d['id']))
-    else: c.execute('INSERT INTO stock (boutique,groupe,nom,qte,unite,achat,vente) VALUES (?,?,?,?,?,?,?)',(d['boutique'],d['groupe'],d['nom'],d['qte'],d['unite'],d['achat'],d['vente']))
-    con.commit(); con.close(); return jsonify({'ok':True})
+    d=request.json
+    if d.get('id') and len(d.get('id'))==24:
+        try: stock_col.update_one({"_id":ObjectId(d['id'])},{"$set":{"groupe":d['groupe'],"nom":d['nom'],"qte":d['qte'],"unite":d['unite'],"achat":d['achat'],"vente":d['vente']}}); return jsonify({'ok':True})
+        except: pass
+    if d.get('id'): stock_col.update_one({"boutique":d['boutique'],"nom":d['nom']},{"$set":{"groupe":d['groupe'],"qte":d['qte'],"unite":d['unite'],"achat":d['achat'],"vente":d['vente']}}, upsert=True)
+    else: stock_col.insert_one({"boutique":d['boutique'],"groupe":d['groupe'],"nom":d['nom'],"qte":d['qte'],"unite":d['unite'],"achat":d['achat'],"vente":d['vente']})
+    return jsonify({'ok':True})
 
-@app.route('/api/stock/<int:id>', methods=['DELETE'])
-def api_stock_del(id): con=db(); con.execute('DELETE FROM stock WHERE id=?',(id,)); con.commit(); con.close(); return jsonify({'ok':True})
+@app.route('/api/stock/<id>', methods=['DELETE'])
+def api_stock_del(id):
+    try: stock_col.delete_one({"_id":ObjectId(id)})
+    except: stock_col.delete_one({"_id":id})
+    return jsonify({'ok':True})
 
 @app.route('/api/mouvement', methods=['POST'])
 def api_mouv():
-    d=request.json; con=db(); c=con.cursor()
-    row=c.execute('SELECT * FROM stock WHERE id=?',(d['id'],)).fetchone()
+    d=request.json
+    try: row=stock_col.find_one({"_id":ObjectId(d['id'])})
+    except: row=stock_col.find_one({"boutique":d['boutique'],"nom":d['produit']})
     if not row: return jsonify({'ok':False})
     nq=row['qte']-float(d['qte']) if d['type']=='Vendu' else row['qte']+float(d['qte'])
     if nq<0: nq=0
-    c.execute('UPDATE stock SET qte=? WHERE id=?',(nq,d['id']))
+    stock_col.update_one({"_id":row['_id']},{"$set":{"qte":nq}})
     now=datetime.now()
-    c.execute('INSERT INTO mouvements (boutique,produit,groupe,type,qte,achat,vente,date,heure,datetime) VALUES (?,?,?,?,?,?,?,?,?,?)',
-              (d['boutique'],d['produit'],row['groupe'],d['type'],d['qte'],row['achat'],row['vente'],now.strftime('%Y-%m-%d'),now.strftime('%H:%M'),now.isoformat()))
-    con.commit(); con.close(); return jsonify({'ok':True})
+    mouv_col.insert_one({"boutique":d['boutique'],"produit":d['produit'],"groupe":row.get('groupe'),"type":d['type'],"qte":float(d['qte']),"achat":row.get('achat'),"vente":row.get('vente'),"date":now.strftime('%Y-%m-%d'),"heure":now.strftime('%H:%M'),"datetime":now.isoformat()})
+    return jsonify({'ok':True})
 
 @app.route('/api/factures', methods=['GET','POST'])
 def api_factures():
-    con=db(); c=con.cursor()
     if request.method == 'POST':
         d=request.json
-        c.execute("INSERT INTO factures (boutique,num,client,tel,total,produits,date) VALUES (?,?,?,?,?,?,?)",
-                  (d['boutique'],d['num'],d['client'],d['tel'],d['total'],json.dumps(d['produits']), datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-        con.commit(); con.close()
+        factures_col.insert_one({"boutique":d['boutique'],"num":d['num'],"client":d['client'],"tel":d['tel'],"total":d['total'],"produits":json.dumps(d['produits']),"date":datetime.now().strftime("%Y-%m-%d %H:%M:%S")})
         return jsonify({"ok":True})
     else:
-        b=request.args.get('boutique')
-        rows=[dict(r) for r in con.execute("SELECT * FROM factures WHERE boutique=? ORDER BY id DESC", (b,)).fetchall()]
-        con.close()
+        b=request.args.get('boutique'); rows=list(factures_col.find({"boutique":b}).sort("_id",-1))
+        for r in rows: r['id']=str(r['_id']); r['_id']=str(r['_id'])
         return jsonify(rows)
 
-@app.route('/api/facture/<int:id>', methods=['DELETE'])
+@app.route('/api/facture/<id>', methods=['DELETE'])
 def del_facture(id):
-    con=db(); con.execute("DELETE FROM factures WHERE id=?", (id,)); con.commit(); con.close()
+    try: factures_col.delete_one({"_id":ObjectId(id)})
+    except: pass
     return jsonify({"ok":True})
 
 @app.route('/api/depenses', methods=['GET','POST'])
 def api_depenses():
-    con=db(); c=con.cursor()
     if request.method == 'POST':
         d=request.json; now=datetime.now()
-        c.execute("INSERT INTO depenses (boutique,motif,categorie,montant,date,heure,datetime) VALUES (?,?,?,?,?,?,?)",
-                  (d['boutique'],d['motif'],d['categorie'],d['montant'],now.strftime('%Y-%m-%d'),now.strftime('%H:%M'),now.isoformat()))
-        con.commit(); con.close()
+        depenses_col.insert_one({"boutique":d['boutique'],"motif":d['motif'],"categorie":d['categorie'],"montant":float(d['montant']),"date":now.strftime('%Y-%m-%d'),"heure":now.strftime('%H:%M'),"datetime":now.isoformat()})
         return jsonify({"ok":True})
     else:
-        b=request.args.get('boutique')
-        rows=[dict(r) for r in con.execute("SELECT * FROM depenses WHERE boutique=? ORDER BY datetime DESC",(b,)).fetchall()]
-        con.close()
+        b=request.args.get('boutique'); rows=list(depenses_col.find({"boutique":b}).sort("datetime",-1))
+        for r in rows: r['id']=str(r['_id'])
         today=datetime.now().date()
         jour=[x for x in rows if x['date']==today.isoformat()]
         semaine=[x for x in rows if datetime.fromisoformat(x['datetime']).date() >= today - timedelta(days=7)]
         mois=[x for x in rows if datetime.fromisoformat(x['datetime']).date() >= today - timedelta(days=30)]
-        return jsonify({"all":rows, "jour":jour, "semaine":semaine, "mois":mois,
-                        "total_jour":sum(x['montant'] for x in jour),
-                        "total_semaine":sum(x['montant'] for x in semaine),
-                        "total_mois":sum(x['montant'] for x in mois)})
+        return jsonify({"all":rows,"jour":jour,"semaine":semaine,"mois":mois,"total_jour":sum(x['montant'] for x in jour),"total_semaine":sum(x['montant'] for x in semaine),"total_mois":sum(x['montant'] for x in mois)})
 
-@app.route('/api/depenses/<int:id>', methods=['DELETE'])
+@app.route('/api/depenses/<id>', methods=['DELETE'])
 def del_dep(id):
-    con=db(); con.execute("DELETE FROM depenses WHERE id=?",(id,)); con.commit(); con.close()
+    try: depenses_col.delete_one({"_id":ObjectId(id)})
+    except: pass
     return jsonify({"ok":True})
 
 @app.route('/api/historique')
 def api_histo():
-    b=request.args.get('boutique',''); con=db()
-    all_mouv=[dict(r) for r in con.execute('SELECT * FROM mouvements WHERE boutique=? ORDER BY datetime DESC',(b,)).fetchall()]
-    has_dep = con.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='depenses'").fetchone()
-    all_dep=[dict(r) for r in con.execute('SELECT * FROM depenses WHERE boutique=? ORDER BY datetime DESC',(b,)).fetchall()] if has_dep else []
-    con.close()
+    b=request.args.get('boutique','')
+    all_mouv=list(mouv_col.find({"boutique":b}).sort("datetime",-1))
+    all_dep=list(depenses_col.find({"boutique":b}).sort("datetime",-1))
     today=datetime.now().date()
     jour=[m for m in all_mouv if m['date']==today.isoformat()]
     semaine=[]
@@ -187,8 +180,8 @@ def api_histo():
         semaine.extend([m for m in all_mouv if m['date']==d])
     dep_jour=[d for d in all_dep if d['date']==today.isoformat()]
     dep_semaine=[d for d in all_dep if datetime.fromisoformat(d['datetime']).date() >= today - timedelta(days=7)]
-    benef_jour = sum((x['vente']-x['achat'])*x['qte'] for x in jour if x['type']=='Vendu')
-    benef_semaine = sum((x['vente']-x['achat'])*x['qte'] for x in semaine if x['type']=='Vendu')
+    benef_jour = sum((x.get('vente',0)-x.get('achat',0))*x.get('qte',0) for x in jour if x['type']=='Vendu')
+    benef_semaine = sum((x.get('vente',0)-x.get('achat',0))*x.get('qte',0) for x in semaine if x['type']=='Vendu')
     dep_jour_total = sum(x['montant'] for x in dep_jour)
     dep_semaine_total = sum(x['montant'] for x in dep_semaine)
     mois=[]
@@ -197,9 +190,9 @@ def api_histo():
         items=[m for m in all_mouv if debut.isoformat() <= m['date'] <= fin.isoformat()]
         dep_items=[d for d in all_dep if debut.isoformat() <= d['date'] <= fin.isoformat()]
         if items or dep_items:
-            benef = sum((x['vente']-x['achat'])*x['qte'] for x in items if x['type']=='Vendu')
+            benef = sum((x.get('vente',0)-x.get('achat',0))*x.get('qte',0) for x in items if x['type']=='Vendu')
             dep = sum(x['montant'] for x in dep_items)
-            mois.append({"label": f"Semaine {4-w} : {debut.strftime('%d/%m')} - {fin.strftime('%d/%m')}", "vendu": sum(x['qte'] for x in items if x['type']=='Vendu'), "recharge": sum(x['qte'] for x in items if x['type']=='Rechargé'), "items": items, "depenses": dep_items, "benef_brut": benef, "dep_total": dep, "benef_net": benef - dep})
+            mois.append({"label": f"Semaine {4-w} : {debut.strftime('%d/%m')} - {fin.strftime('%d/%m')}", "vendu": sum(x.get('qte',0) for x in items if x['type']=='Vendu'), "recharge": sum(x.get('qte',0) for x in items if x['type']=='Rechargé'), "items": items, "depenses": dep_items, "benef_brut": benef, "dep_total": dep, "benef_net": benef - dep})
     return jsonify({"jour":jour,"semaine":semaine,"mois":mois,"all":all_mouv,"dep_jour":dep_jour,"dep_semaine":dep_semaine,"benef_jour_brut":benef_jour,"benef_jour_net":benef_jour - dep_jour_total,"benef_semaine_brut":benef_semaine,"benef_semaine_net":benef_semaine - dep_semaine_total,"dep_jour_total":dep_jour_total,"dep_semaine_total":dep_semaine_total})
 
 if __name__ == "__main__":
