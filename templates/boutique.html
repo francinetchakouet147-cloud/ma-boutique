@@ -7,9 +7,10 @@
 .hamburger{position:fixed;top:15px;left:15px;z-index:1100;background:var(--primary);color:white;border:0;border-radius:12px;padding:10px 14px;display:none}
 .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999}
 @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding-top:70px}.hamburger{display:block}.overlay.open{display:block}}
-</style></head><link rel="manifest" href="/static/manifest.json">
+</style>
+</head><link rel="manifest" href="/static/manifest.json">
 <meta name="theme-color" content="#0d6efd">
-  <body>
+<body>
 <button class="hamburger" onclick="toggleMenu()"><i class="bi bi-list fs-4"></i></button><div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 <div class="sidebar" id="sidebar">
 <h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">ATLAS • Chic Luxe</small><hr style="border-color:#334155">
@@ -27,4 +28,28 @@ async function loadAll(){let r=await fetch('/api/stock?boutique='+encodeURICompo
 async function delP(id){if(!confirm('Supprimer?'))return;await fetch('/api/stock/'+id,{method:'DELETE'});loadAll();}
 async function mouv(id,nom,type){let q=prompt(`${type} - Quantité pour ${nom}?`, '1');if(!q)return;q=parseFloat(q);if(q<=0){alert('Quantité invalide');return;}let prod=stock.find(s=>s._id==id);if(type=='Vendu'&&prod.qte<q){alert(`Stock insuffisant! Reste ${prod.qte}`);return;}let res=await fetch('/api/mouvement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,boutique,produit:nom,type,qte:q})});let j=await res.json();if(j.ok){alert(type=='Vendu'?`✅ Vendu ${q} x ${nom}`:`✅ Rechargé ${q} x ${nom}`);loadAll();}}
 loadAll();
-</script></body></html>
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js');
+}
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Crée le bouton pour tous tes clients
+  if(document.getElementById('installBtn')) return;
+  const btn = document.createElement('button');
+  btn.id = 'installBtn';
+  btn.innerHTML = "📲 Installer l'app TFA";
+  btn.style = "position:fixed;bottom:20px;left:5%;right:5%;padding:16px;background:#0d6efd;color:white;border:0;border-radius:30px;z-index:99999;font-weight:bold;font-size:16px;box-shadow:0 8px 20px rgba(0,0,0,.3)";
+  document.body.appendChild(btn);
+  btn.onclick = async () => {
+    deferredPrompt.prompt();
+    const choice = await deferredPrompt.userChoice;
+    btn.remove();
+  };
+});
+</script>
+</body></html>
+</body></html>
