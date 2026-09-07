@@ -6,12 +6,10 @@ from bson import ObjectId
 
 app = Flask(__name__)
 
-# --- ROUTE POUR ICONES + MANIFEST + SW.JS - C'EST CE QUI MANQUAIT ---
 @app.route('/static/<path:filename>')
 def static_files(filename):
     return send_from_directory('static', filename)
 
-# --- CONNEXION MONGODB ATLAS - CORRIGE ---
 MONGO_URI = os.environ.get("MONGO_URI") or os.environ.get("MONGODB_URI")
 if not MONGO_URI:
     raise Exception("MONGO_URI manquant dans Render > Environment")
@@ -124,15 +122,43 @@ def api_stock():
 @app.route('/api/stock', methods=['POST'])
 def api_stock_save():
     d=request.json
+    # --- NOUVELLE LOGIQUE BOUTEILLE / PIECE ---
+    unite_base = d.get('unite_base') or d.get('unite') or 'bouteille'
+    stock_base = float(d.get('stock_base') if d.get('stock_base') is not None else d.get('qte',0))
+    achat_base = float(d.get('achat_base') if d.get('achat_base') is not None else d.get('achat',0))
+    vente_base = float(d.get('vente_base') if d.get('vente_base') is not None else d.get('vente',0))
+    emballages = d.get('emballages') or []
+    groupe = d.get('groupe','Autre')
+    nom = d.get('nom','')
+    boutique = d.get('boutique','')
+
+    data_to_set = {
+        "groupe": groupe,
+        "nom": nom,
+        "boutique": boutique,
+        # Nouveau champs - LA VERITE
+        "unite_base": unite_base,
+        "stock_base": stock_base,
+        "achat_base": achat_base,
+        "vente_base": vente_base,
+        "emballages": emballages,
+        # Anciens champs pour compatibilité avec tes anciennes pages
+        "qte": stock_base,
+        "unite": unite_base,
+        "achat": achat_base,
+        "vente": vente_base,
+    }
+
     if d.get('id') and len(str(d.get('id')))==24:
         try:
             oid=ObjectId(d['id'])
-            stock_col.update_one({"_id":oid},{"$set":{"groupe":d['groupe'],"nom":d['nom'],"qte":float(d['qte']),"unite":d['unite'],"achat":float(d['achat']),"vente":float(d['vente']),"boutique":d['boutique']}})
+            stock_col.update_one({"_id":oid},{"$set":data_to_set})
             return jsonify({'ok':True})
         except: pass
+
     stock_col.update_one(
-        {"boutique":d['boutique'],"nom":d['nom']},
-        {"$set":{"groupe":d['groupe'],"qte":float(d['qte']),"unite":d['unite'],"achat":float(d['achat']),"vente":float(d['vente'])}},
+        {"boutique":boutique,"nom":nom},
+        {"$set":data_to_set},
         upsert=True
     )
     return jsonify({'ok':True})
@@ -149,12 +175,33 @@ def api_mouv():
     try: row=stock_col.find_one({"_id":ObjectId(d['id'])})
     except: row=stock_col.find_one({"boutique":d['boutique'],"nom":d['produit']})
     if not row: return jsonify({'ok':False, 'msg':'produit introuvable'})
-    qte = float(d['qte'])
-    nq=row['qte']-qte if d['type']=='Vendu' else row['qte']+qte
-    if nq<0: nq=0
-    stock_col.update_one({"_id":row['_id']},{"$set":{"qte":nq}})
+    
+    # qte reçue = toujours en BOUTEILLES / PIECES (qte_base)
+    qte_base = float(d['qte'])
+    stock_actuel = float(row.get('stock_base', row.get('qte',0)))
+    
+    nq_base = stock_actuel - qte_base if d['type']=='Vendu' else stock_actuel + qte_base
+    if nq_base<0: nq_base=0
+
+    # On met à jour les deux champs pour que toutes tes pages marchent
+    stock_col.update_one({"_id":row['_id']},{"$set":{"stock_base":nq_base, "qte":nq_base}})
+    
     now=datetime.now()
-    mouv_col.insert_one({"boutique":d['boutique'],"produit":d['produit'],"groupe":row.get('groupe'),"type":d['type'],"qte":qte,"achat":row.get('achat'),"vente":row.get('vente'),"date":now.strftime('%Y-%m-%d'),"heure":now.strftime('%H:%M'),"datetime":now.isoformat()})
+    mouv_col.insert_one({
+        "boutique":d['boutique'],
+        "produit":d['produit'],
+        "groupe":row.get('groupe'),
+        "type":d['type'],
+        "qte":qte_base, # pour calcul benefice, toujours en base
+        "qte_affichee": d.get('qte_affichee', f"{qte_base} {row.get('unite_base','')}"),
+        "unite_cmd": d.get('unite_cmd',''),
+        "facteur": d.get('facteur',1),
+        "achat":row.get('achat_base', row.get('achat')),
+        "vente":row.get('vente_base', row.get('vente')),
+        "date":now.strftime('%Y-%m-%d'),
+        "heure":now.strftime('%H:%M'),
+        "datetime":now.isoformat()
+    })
     return jsonify({'ok':True})
 
 @app.route('/api/factures', methods=['GET','POST'])
