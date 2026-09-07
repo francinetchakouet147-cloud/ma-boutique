@@ -1,0 +1,125 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dettes</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+<style>:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}body{background:var(--bg)}
+.sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;padding:22px;top:0;left:0;color:#cbd5e1;z-index:1000;transition:0.3s;overflow-y:auto}
+.sidebar a{color:#94a3b8;text-decoration:none;display:block;padding:12px 14px;border-radius:12px;margin-bottom:8px}.sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}
+.main{margin-left:260px;padding:20px 28px}.card{border:0;border-radius:18px;box-shadow:0 4px 20px rgba(0,0,0,.06)}
+.kpi-red{border-left:6px solid #ef4444}.kpi-gold{border-left:6px solid var(--accent)}.kpi-green{border-left:6px solid #10b981}
+.hamburger{position:fixed;top:15px;left:15px;z-index:1100;background:var(--primary);color:white;border:0;border-radius:12px;padding:10px 14px;display:none}
+.overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding-top:70px}.hamburger{display:block}.overlay.open{display:block}}
+</style></head><body>
+<button class="hamburger" onclick="toggleMenu()"><i class="bi bi-list fs-4"></i></button><div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<div class="sidebar" id="sidebar">
+<h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">Atlas • Dettes</small><hr style="border-color:#334155">
+<a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a>
+<a href="/ventes"><i class="bi bi-cart-check-fill me-2"></i>Ventes</a>
+<a href="/commande"><i class="bi bi-receipt me-2"></i>Commande</a>
+<a href="/dettes" class="active" style="background:var(--accent);color:#000;font-weight:700"><i class="bi bi-person-lines-fill me-2"></i>Dettes / Crédits</a>
+<a href="/factures"><i class="bi bi-file-earmark-text me-2"></i>Factures</a>
+<a href="/depenses"><i class="bi bi-cash-stack me-2"></i>Dépenses</a>
+<a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a>
+<a href="/statistiques"><i class="bi bi-graph-up me-2"></i>Stats</a>
+<a href="/stock-faible"><i class="bi bi-exclamation-triangle me-2"></i>Stock faible</a>
+<div style="margin-top:20px"><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center">Déconnexion</a></div></div>
+
+<div class="main">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+<h4 class="fw-bold">💳 Dettes clients - Atlas</h4>
+<a href="/boutique" class="btn btn-dark rounded-pill"><i class="bi bi-arrow-left"></i> Retour boutique</a>
+</div>
+
+<div class="row g-3 mt-3">
+<div class="col-md-4"><div class="card p-3 kpi-red"><small class="text-muted fw-bold">À RÉCUPÉRER</small><h3 id="tRecup" class="fw-bold text-danger">0 FCFA</h3><small id="tNb" class="text-muted">0 personnes</small></div></div>
+<div class="col-md-4"><div class="card p-3 kpi-green"><small class="text-muted fw-bold">RÉCUPÉRÉ CE MOIS</small><h3 id="tMois" class="fw-bold" style="color:#10b981">0 FCFA</h3></div></div>
+<div class="col-md-4"><div class="card p-3 kpi-gold"><small class="text-muted fw-bold">RECHERCHER</small><input id="search" class="form-control rounded-pill mt-2" placeholder="Nom ou tel..."></div></div>
+</div>
+
+<div class="mt-4" id="list"></div>
+</div>
+
+<!-- Modal paiement partiel -->
+<div class="modal fade" id="payModal"><div class="modal-dialog"><div class="modal-content rounded-4"><div class="modal-body p-4">
+<h6 class="fw-bold" id="payTitle">Paiement</h6><p id="payInfo" class="small text-muted"></p>
+<input id="payMont" type="number" class="form-control rounded-pill mt-3" placeholder="Montant payé maintenant">
+<button class="btn btn-dark w-100 rounded-pill mt-3 fw-bold" onclick="confirmPay()">✅ Confirmer paiement</button>
+</div></div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open');}
+let boutique=localStorage.getItem('boutique')||'Boutique Bibi Shop';document.getElementById('bName').innerText=boutique;
+let allData=[]; let curId=null;
+
+async function load(){
+  let r=await fetch('/api/dettes?boutique='+encodeURIComponent(boutique));
+  let j=await r.json();
+  allData=j.dettes||[];
+  document.getElementById('tRecup').innerText=j.total_a_recup.toLocaleString()+' FCFA';
+  document.getElementById('tNb').innerText=j.nb+' personnes qui doivent';
+  document.getElementById('tMois').innerText=j.total_recup_mois.toLocaleString()+' FCFA';
+  render(allData);
+}
+
+function render(list){
+  let html='';
+  if(list.length==0) html='<div class="card p-5 text-center text-muted"><h3>✅</h3>Aucune dette, tout est payé !</div>';
+  list.forEach(d=>{
+    let col=d.statut=='paye'?'#10b981':'#ef4444';
+    let badge=d.statut=='paye'?'<span class="badge bg-success">Payé</span>':`<span class="badge bg-danger">Reste ${Number(d.reste).toLocaleString()} FCFA</span>`;
+    let prods=(d.produits||[]).map(p=>{
+      let q=p.qte_cmd??p.qte??0;
+      let u=p.unite_cmd??p.unite??'';
+      return `${p.nom} x${q} ${u}`;
+    }).join(', ');
+    let hist=(d.paiements||[]).map(p=>`<small class="text-muted">• ${p.date} : +${Number(p.montant).toLocaleString()} FCFA</small>`).join('<br>');
+    html+=`<div class="card p-3 mb-3" style="border-left:6px solid ${col}">
+      <div class="d-flex justify-content-between flex-wrap gap-2">
+        <div style="flex:1">
+          <div class="d-flex gap-2 align-items-center"><b>${d.client}</b> ${badge}</div>
+          <small class="text-muted"><i class="bi bi-telephone"></i> ${d.tel} • ${d.date_dette} ${d.date_limite?'• Échéance '+d.date_limite:''}</small><br>
+          <small><b>${prods}</b></small><br>
+          <small>Total: <b>${Number(d.total_dette).toLocaleString()}</b> FCFA • Déjà payé: <b style="color:#10b981">${Number(d.deja_paye).toLocaleString()}</b> • Reste: <b style="color:#ef4444">${Number(d.reste).toLocaleString()}</b></small>
+          <div class="mt-1">${hist}</div>
+        </div>
+        <div class="d-flex flex-column gap-1" style="min-width:130px">
+          ${d.statut!='paye'?`<button class="btn btn-sm rounded-pill fw-bold" style="background:var(--primary);color:#fff" onclick="openPay('${d._id}')"><i class="bi bi-cash"></i> A payé</button>
+          <a class="btn btn-sm rounded-pill fw-bold" style="background:#25D366;color:#fff" href="https://wa.me/${d.tel}?text=${encodeURIComponent(`Bonjour ${d.client}, tu dois encore ${d.reste.toLocaleString()} FCFA chez ${boutique} pour ${prods}. Merci de passer régler 🙏`)}" target="_blank"><i class="bi bi-whatsapp"></i> Rappel</a>`:''}
+          <button class="btn btn-sm btn-light rounded-pill" onclick="supp('${d._id}')"><i class="bi bi-trash"></i> Supprimer</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  document.getElementById('list').innerHTML=html;
+}
+
+document.getElementById('search').addEventListener('input',e=>{
+  let v=e.target.value.toLowerCase();
+  render(allData.filter(d=>d.client.toLowerCase().includes(v)||String(d.tel).includes(v)));
+});
+
+function openPay(id){
+  curId=id;
+  let d=allData.find(x=>x._id==id);
+  document.getElementById('payTitle').innerText=d.client+' doit '+Number(d.reste).toLocaleString()+' FCFA';
+  document.getElementById('payInfo').innerText='Total '+Number(d.total_dette).toLocaleString()+' • Déjà payé '+Number(d.deja_paye).toLocaleString();
+  document.getElementById('payMont').value='';
+  new bootstrap.Modal(document.getElementById('payModal')).show();
+}
+
+async function confirmPay(){
+  let m=parseFloat(document.getElementById('payMont').value);
+  if(!m||m<=0){alert('Montant invalide');return;}
+  await fetch('/api/dettes/payer',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:curId,montant:m})});
+  bootstrap.Modal.getInstance(document.getElementById('payModal')).hide();
+  load();
+}
+
+async function supp(id){
+  if(!confirm('Supprimer cette dette définitivement ?'))return;
+  await fetch('/api/dettes/'+id,{method:'DELETE'});
+  load();
+}
+
+load();
+</script></body></html>
