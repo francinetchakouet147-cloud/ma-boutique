@@ -19,7 +19,24 @@
 <script>
 function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open');}
 let boutique=localStorage.getItem('boutique')||'Boutique Bibi Shop';document.getElementById('bName').innerText=boutique;
-async function load(){let r=await fetch('/api/factures?boutique='+encodeURIComponent(boutique));let data=await r.json();let html='';data.forEach(f=>{let prods=[]; try{prods=JSON.parse(f.produits);}catch(e){prods=f.produits||[];} let detail=Array.isArray(prods)?prods.map(p=>`${p.nom} x${p.qte}`).join(', '):''; html+=`<div class="col-md-6 col-xl-4"><div class="card p-3"><div class="d-flex justify-content-between"><b>${f.num}</b><small class="text-muted">${f.date}</small></div><b class="mt-2">${f.client}</b><br><small class="text-muted"><i class="bi bi-whatsapp"></i> ${f.tel}</small><hr class="my-2"><small>${detail}</small><div class="d-flex justify-content-between align-items-center mt-2"><h6 class="fw-bold mb-0">${f.total.toLocaleString()} FCFA</h6><div><a href="https://wa.me/${f.tel}?text=Bonjour ${f.client}" target="_blank" class="btn btn-sm rounded-pill" style="background:#25D366;color:#fff"><i class="bi bi-whatsapp"></i></a> <button class="btn btn-sm btn-light rounded-pill" onclick="supp('${f._id}')"><i class="bi bi-trash"></i></button></div></div></div></div>`});document.getElementById('list').innerHTML=html||'<p class="text-muted p-3">Aucune facture gardée</p>';}
+async function load(){
+  let r=await fetch('/api/factures?boutique='+encodeURIComponent(boutique));
+  let data=await r.json();
+  let html='';
+  data.forEach(f=>{
+    let prods=[]; 
+    try{prods=JSON.parse(f.produits);}catch(e){prods=f.produits||[];} 
+    // NOUVELLE LOGIQUE : supporte ancien qte et nouveau qte_cmd / unite_cmd
+    let detail = Array.isArray(prods) ? prods.map(p=>{
+      let q = p.qte_cmd ?? p.qte ?? 0;
+      let u = p.unite_cmd ?? p.unite ?? '';
+      let qb = p.qte_base ? `(${p.qte_base} btl)` : '';
+      return `${p.nom} x${q} ${u} ${qb}`;
+    }).join(', ') : '';
+    html+=`<div class="col-md-6 col-xl-4"><div class="card p-3"><div class="d-flex justify-content-between"><b>${f.num}</b><small class="text-muted">${f.date}</small></div><b class="mt-2">${f.client}</b><br><small class="text-muted"><i class="bi bi-whatsapp"></i> ${f.tel}</small><hr class="my-2"><small>${detail}</small><div class="d-flex justify-content-between align-items-center mt-2"><h6 class="fw-bold mb-0">${f.total.toLocaleString()} FCFA</h6><div><a href="https://wa.me/${f.tel}?text=Bonjour ${f.client} - Facture ${f.num} Total ${f.total} FCFA" target="_blank" class="btn btn-sm rounded-pill" style="background:#25D366;color:#fff"><i class="bi bi-whatsapp"></i></a> <button class="btn btn-sm btn-light rounded-pill" onclick="supp('${f._id}')"><i class="bi bi-trash"></i></button></div></div></div></div>`
+  });
+  document.getElementById('list').innerHTML=html||'<p class="text-muted p-3">Aucune facture gardée</p>';
+}
 async function supp(id){if(!confirm('Supprimer cette facture?'))return;await fetch('/api/facture/'+id,{method:'DELETE'});load();}
 load();
 </script></body></html>
