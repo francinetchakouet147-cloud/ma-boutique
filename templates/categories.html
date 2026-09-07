@@ -14,8 +14,62 @@
 <script>
 function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open');}
 let boutique=localStorage.getItem('boutique')||'Boutique Bibi Shop';document.getElementById('bName').innerText=boutique;
-async function load(){let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();let stock=j.stock||[];let byCat={};stock.forEach(s=>{let cat=s.groupe||'Sans catégorie';if(!byCat[cat])byCat[cat]={qte:0,produits:0,achat:0,vente:0,items:[]};byCat[cat].qte+=Number(s.qte||0);byCat[cat].produits++;byCat[cat].achat+=Number(s.qte||0)*Number(s.achat||0);byCat[cat].vente+=Number(s.qte||0)*Number(s.vente||0);byCat[cat].items.push(s);});let h='';Object.keys(byCat).forEach(cat=>{let d=byCat[cat];h+=`<div class="card p-4 mb-3"><div class="row align-items-center"><div class="col-md-3"><h5 class="fw-bold">${cat}</h5><span class="badge" style="background:var(--accent);color:#000">${d.produits} prod.</span></div><div class="col-md-2"><small>Qté</small><br><b>${d.qte}</b></div><div class="col-md-2"><small>Achat</small><br><b>${d.achat.toLocaleString()} FCFA</b></div><div class="col-md-2"><small>Vente</small><br><b>${d.vente.toLocaleString()} FCFA</b></div><div class="col-md-3 text-end"><button class="btn btn-sm btn-light rounded-pill" onclick="renameCat('${cat.replace(/'/g,"\\'")}')">✏️ Renommer</button></div></div></div>`});document.getElementById('cats').innerHTML=h||'<p>Aucune catégorie</p>';let h2='';Object.keys(byCat).forEach(cat=>{h2+=`<h6 class="fw-bold mt-4" style="color:var(--primary)">${cat} (${byCat[cat].produits})</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Produit</th><th>Qté</th><th>Achat</th><th>Vente</th><th>Bénéf</th><th>Action</th></tr></thead><tbody>${byCat[cat].items.map(p=>`<tr><td><b>${p.nom}</b></td><td>${p.qte}</td><td>${p.achat}</td><td class="fw-bold">${p.vente}</td><td style="color:#10b981;font-weight:700">+${(p.vente-p.achat).toLocaleString()}</td><td><button class="btn btn-sm btn-gold rounded-pill" onclick="recharger('${p._id}','${p.nom.replace(/'/g,"\\'")}')">+ Recharger</button></td></tr>`).join('')}</tbody></table></div>`});document.getElementById('detail').innerHTML=h2;}
-async function recharger(id,nom){let q=prompt('Recharger - Qté pour '+nom+'?','1');if(!q)return;q=parseFloat(q);await fetch('/api/mouvement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,boutique,produit:nom,type:'Rechargé',qte:q})});load();}
-async function renameCat(oldName){let n=prompt('Nouveau nom pour '+oldName+'?',oldName);if(!n||n==oldName)return;let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();for(let p of j.stock.filter(s=>s.groupe==oldName)){await fetch('/api/stock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:p._id,boutique,groupe:n,nom:p.nom,qte:p.qte,unite:p.unite,achat:p.achat,vente:p.vente})});}load();}
+
+// NOUVELLE LOGIQUE : toujours en bouteilles / pièces
+function sb(p){return p.stock_base?? p.qte?? 0}
+function ab(p){return p.achat_base?? p.achat?? 0}
+function vb(p){return p.vente_base?? p.vente?? 0}
+function ub(p){return p.unite_base?? p.unite?? 'btl'}
+
+async function load(){
+  let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));
+  let j=await r.json();
+  let stock=j.stock||[];
+  let byCat={};
+  stock.forEach(s=>{
+    let cat=s.groupe||'Sans catégorie';
+    if(!byCat[cat])byCat[cat]={qte:0,produits:0,achat:0,vente:0,items:[]};
+    byCat[cat].qte+=Number(sb(s));
+    byCat[cat].produits++;
+    byCat[cat].achat+=Number(sb(s))*Number(ab(s));
+    byCat[cat].vente+=Number(sb(s))*Number(vb(s));
+    byCat[cat].items.push(s);
+  });
+  let h='';
+  Object.keys(byCat).forEach(cat=>{
+    let d=byCat[cat];
+    h+=`<div class="card p-4 mb-3"><div class="row align-items-center"><div class="col-md-3"><h5 class="fw-bold">${cat}</h5><span class="badge" style="background:var(--accent);color:#000">${d.produits} prod.</span></div><div class="col-md-2"><small>Qté btl/pc</small><br><b>${d.qte}</b></div><div class="col-md-2"><small>Achat</small><br><b>${d.achat.toLocaleString()} FCFA</b></div><div class="col-md-2"><small>Vente</small><br><b>${d.vente.toLocaleString()} FCFA</b></div><div class="col-md-3 text-end"><button class="btn btn-sm btn-light rounded-pill" onclick="renameCat('${cat.replace(/'/g,"\\'")}')">✏️ Renommer</button></div></div></div>`
+  });
+  document.getElementById('cats').innerHTML=h||'<p>Aucune catégorie</p>';
+  let h2='';
+  Object.keys(byCat).forEach(cat=>{
+    h2+=`<h6 class="fw-bold mt-4" style="color:var(--primary)">${cat} (${byCat[cat].produits})</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Produit</th><th>Qté btl/pc</th><th>Achat /btl</th><th>Vente /btl</th><th>Bénéf /btl</th><th>Action</th></tr></thead><tbody>${byCat[cat].items.map(p=>`<tr><td><b>${p.nom}</b><br><small class="text-muted">${ub(p)}</small></td><td>${sb(p)}</td><td>${ab(p).toLocaleString()}</td><td class="fw-bold">${vb(p).toLocaleString()}</td><td style="color:#10b981;font-weight:700">+${(vb(p)-ab(p)).toLocaleString()}</td><td><button class="btn btn-sm btn-gold rounded-pill" onclick="recharger('${p._id}','${p.nom.replace(/'/g,"\\'")}')">+ Recharger</button></td></tr>`).join('')}</tbody></table></div>`
+  });
+  document.getElementById('detail').innerHTML=h2;
+}
+
+async function recharger(id,nom){
+  let q=prompt('Recharger - Combien de BOUTEILLES / PIÈCES pour '+nom+'? (ex: 40 pour 1 palette 40)','12');
+  if(!q)return;q=parseFloat(q);
+  await fetch('/api/mouvement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,boutique,produit:nom,type:'Rechargé',qte:q})});
+  load();
+}
+
+async function renameCat(oldName){
+  let n=prompt('Nouveau nom pour '+oldName+'?',oldName);
+  if(!n||n==oldName)return;
+  let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));
+  let j=await r.json();
+  for(let p of j.stock.filter(s=>s.groupe==oldName)){
+    // On garde stock_base pour ne pas casser la nouvelle logique
+    await fetch('/api/stock',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      id:p._id,boutique,groupe:n,nom:p.nom,
+      qte: sb(p), unite: ub(p), achat: ab(p), vente: vb(p),
+      stock_base: sb(p), unite_base: ub(p), achat_base: ab(p), vente_base: vb(p),
+      emballages: p.emballages||[]
+    })});
+  }
+  load();
+}
 load();
 </script></body></html>
