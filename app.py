@@ -21,6 +21,7 @@ stock_col = db_mongo["stock"]
 mouv_col = db_mongo["mouvements"]
 factures_col = db_mongo["factures"]
 depenses_col = db_mongo["depenses"]
+dettes_col = db_mongo["dettes"]  # NOUVEAU
 
 def serialize(doc):
     if not doc: return None
@@ -31,7 +32,6 @@ def serialize(doc):
 def init_db():
     if not clients_col.find_one({"nom":"aurelie"}):
         clients_col.insert_one({"nom":"aurelie","tel":"000","boutique":"Admin","pass":"aurelie123","premiere":0,"bloque":0})
-
 init_db()
 
 @app.route('/')
@@ -58,6 +58,8 @@ def commande(): return render_template('commande.html')
 def factures_page(): return render_template('factures.html')
 @app.route('/depenses')
 def depenses_page(): return render_template('depenses.html')
+@app.route('/dettes')
+def dettes_page(): return render_template('dettes.html')
 
 @app.route('/api/login', methods=['POST'])
 def api_login():
@@ -67,16 +69,12 @@ def api_login():
     if nom=='aurelie' and pas=='aurelie123':
         return jsonify({'ok':True,'role':'admin'})
     cl=clients_col.find_one({"nom": nom})
-    if not cl:
-        return jsonify({'ok':False,'msg':'Client inconnu'})
-    if cl.get('bloque')==1:
-        return jsonify({'ok':False,'msg':'Compte bloqué par admin'})
-    if cl.get('pass')!=pas:
-        return jsonify({'ok':False,'msg':'Mauvais mot de passe'})
+    if not cl: return jsonify({'ok':False,'msg':'Client inconnu'})
+    if cl.get('bloque')==1: return jsonify({'ok':False,'msg':'Compte bloqué par admin'})
+    if cl.get('pass')!=pas: return jsonify({'ok':False,'msg':'Mauvais mot de passe'})
     is_premiere = bool(cl.get('premiere')==1)
     cl_serialized = serialize(cl)
-    if is_premiere:
-        return jsonify({'ok':True,'role':'client','premiere':True, 'client':cl_serialized})
+    if is_premiere: return jsonify({'ok':True,'role':'client','premiere':True, 'client':cl_serialized})
     return jsonify({'ok':True,'role':'client','premiere':False, 'client':cl_serialized})
 
 @app.route('/api/clients')
@@ -94,22 +92,15 @@ def api_add():
 
 @app.route('/api/clients/<id>', methods=['PUT','DELETE'])
 def api_edit(id):
-    try:
-        oid=ObjectId(id)
-    except:
-        return jsonify({'ok':False})
-    if request.method=='DELETE':
-        clients_col.delete_one({"_id":oid})
+    try: oid=ObjectId(id)
+    except: return jsonify({'ok':False})
+    if request.method=='DELETE': clients_col.delete_one({"_id":oid})
     else:
         d=request.json
-        if 'bloque' in d:
-            clients_col.update_one({"_id":oid},{"$set":{"bloque":int(bool(d['bloque']))}})
-        if 'reset' in d:
-            clients_col.update_one({"_id":oid},{"$set":{"pass":"1234","premiere":1}})
-        if 'newpass' in d:
-            clients_col.update_one({"_id":oid},{"$set":{"pass":d['newpass'],"premiere":0}})
-        if 'nom' in d:
-            clients_col.update_one({"_id":oid},{"$set":{"nom":d['nom'].lower(),"tel":d['tel'],"boutique":d['boutique']}})
+        if 'bloque' in d: clients_col.update_one({"_id":oid},{"$set":{"bloque":int(bool(d['bloque']))}})
+        if 'reset' in d: clients_col.update_one({"_id":oid},{"$set":{"pass":"1234","premiere":1}})
+        if 'newpass' in d: clients_col.update_one({"_id":oid},{"$set":{"pass":d['newpass'],"premiere":0}})
+        if 'nom' in d: clients_col.update_one({"_id":oid},{"$set":{"nom":d['nom'].lower(),"tel":d['tel'],"boutique":d['boutique']}})
     return jsonify({'ok':True})
 
 @app.route('/api/stock')
@@ -122,7 +113,6 @@ def api_stock():
 @app.route('/api/stock', methods=['POST'])
 def api_stock_save():
     d=request.json
-    # --- NOUVELLE LOGIQUE BOUTEILLE / PIECE ---
     unite_base = d.get('unite_base') or d.get('unite') or 'bouteille'
     stock_base = float(d.get('stock_base') if d.get('stock_base') is not None else d.get('qte',0))
     achat_base = float(d.get('achat_base') if d.get('achat_base') is not None else d.get('achat',0))
@@ -131,36 +121,14 @@ def api_stock_save():
     groupe = d.get('groupe','Autre')
     nom = d.get('nom','')
     boutique = d.get('boutique','')
-
-    data_to_set = {
-        "groupe": groupe,
-        "nom": nom,
-        "boutique": boutique,
-        # Nouveau champs - LA VERITE
-        "unite_base": unite_base,
-        "stock_base": stock_base,
-        "achat_base": achat_base,
-        "vente_base": vente_base,
-        "emballages": emballages,
-        # Anciens champs pour compatibilité avec tes anciennes pages
-        "qte": stock_base,
-        "unite": unite_base,
-        "achat": achat_base,
-        "vente": vente_base,
-    }
-
+    data_to_set = {"groupe":groupe,"nom":nom,"boutique":boutique,"unite_base":unite_base,"stock_base":stock_base,"achat_base":achat_base,"vente_base":vente_base,"emballages":emballages,"qte":stock_base,"unite":unite_base,"achat":achat_base,"vente":vente_base,}
     if d.get('id') and len(str(d.get('id')))==24:
         try:
             oid=ObjectId(d['id'])
             stock_col.update_one({"_id":oid},{"$set":data_to_set})
             return jsonify({'ok':True})
         except: pass
-
-    stock_col.update_one(
-        {"boutique":boutique,"nom":nom},
-        {"$set":data_to_set},
-        upsert=True
-    )
+    stock_col.update_one({"boutique":boutique,"nom":nom},{"$set":data_to_set},upsert=True)
     return jsonify({'ok':True})
 
 @app.route('/api/stock/<id>', methods=['DELETE'])
@@ -175,35 +143,16 @@ def api_mouv():
     try: row=stock_col.find_one({"_id":ObjectId(d['id'])})
     except: row=stock_col.find_one({"boutique":d['boutique'],"nom":d['produit']})
     if not row: return jsonify({'ok':False, 'msg':'produit introuvable'})
-    
-    # qte reçue = toujours en BOUTEILLES / PIECES (qte_base)
     qte_base = float(d['qte'])
     stock_actuel = float(row.get('stock_base', row.get('qte',0)))
-    
     nq_base = stock_actuel - qte_base if d['type']=='Vendu' else stock_actuel + qte_base
     if nq_base<0: nq_base=0
-
-    # On met à jour les deux champs pour que toutes tes pages marchent
     stock_col.update_one({"_id":row['_id']},{"$set":{"stock_base":nq_base, "qte":nq_base}})
-    
     now=datetime.now()
-    mouv_col.insert_one({
-        "boutique":d['boutique'],
-        "produit":d['produit'],
-        "groupe":row.get('groupe'),
-        "type":d['type'],
-        "qte":qte_base, # pour calcul benefice, toujours en base
-        "qte_affichee": d.get('qte_affichee', f"{qte_base} {row.get('unite_base','')}"),
-        "unite_cmd": d.get('unite_cmd',''),
-        "facteur": d.get('facteur',1),
-        "achat":row.get('achat_base', row.get('achat')),
-        "vente":row.get('vente_base', row.get('vente')),
-        "date":now.strftime('%Y-%m-%d'),
-        "heure":now.strftime('%H:%M'),
-        "datetime":now.isoformat()
-    })
+    mouv_col.insert_one({"boutique":d['boutique'],"produit":d['produit'],"groupe":row.get('groupe'),"type":d['type'],"qte":qte_base,"qte_affichee": d.get('qte_affichee', f"{qte_base} {row.get('unite_base','')}"),"unite_cmd": d.get('unite_cmd',''),"facteur": d.get('facteur',1),"achat":row.get('achat_base', row.get('achat')),"vente":row.get('vente_base', row.get('vente')),"date":now.strftime('%Y-%m-%d'),"heure":now.strftime('%H:%M'),"datetime":now.isoformat()})
     return jsonify({'ok':True})
 
+# ===== FACTURES =====
 @app.route('/api/factures', methods=['GET','POST'])
 def api_factures():
     if request.method == 'POST':
@@ -221,6 +170,7 @@ def del_facture(id):
     except: pass
     return jsonify({"ok":True})
 
+# ===== DEPENSES =====
 @app.route('/api/depenses', methods=['GET','POST'])
 def api_depenses():
     if request.method == 'POST':
@@ -232,13 +182,60 @@ def api_depenses():
         rows=[serialize(r) for r in depenses_col.find({"boutique":b}).sort("datetime",-1)]
         today=datetime.now().date()
         jour=[x for x in rows if x.get('date')==today.isoformat()]
-        semaine=[x for x in rows if datetime.fromisoformat(x['datetime']).date() >= today - timedelta(days=7)]
-        mois=[x for x in rows if datetime.fromisoformat(x['datetime']).date() >= today - timedelta(days=30)]
+        semaine=[x for x in rows if x.get('datetime') and datetime.fromisoformat(x['datetime']).date() >= today - timedelta(days=7)]
+        mois=[x for x in rows if x.get('datetime') and datetime.fromisoformat(x['datetime']).date() >= today - timedelta(days=30)]
         return jsonify({"all":rows,"jour":jour,"semaine":semaine,"mois":mois,"total_jour":sum(x['montant'] for x in jour),"total_semaine":sum(x['montant'] for x in semaine),"total_mois":sum(x['montant'] for x in mois)})
 
 @app.route('/api/depenses/<id>', methods=['DELETE'])
 def del_dep(id):
     try: depenses_col.delete_one({"_id":ObjectId(id)})
+    except: pass
+    return jsonify({"ok":True})
+
+# ===== DETTES / CREDITS =====
+@app.route('/api/dettes', methods=['GET','POST'])
+def api_dettes():
+    if request.method=='POST':
+        d=request.json
+        now=datetime.now()
+        d['date_dette']=now.strftime("%d/%m/%Y %H:%M")
+        d['datetime']=now.isoformat()
+        d['statut']='paye' if float(d.get('reste',0))<=0 else 'en_cours'
+        if 'paiements' not in d:
+            d['paiements']=[]
+            if float(d.get('deja_paye',0))>0:
+                d['paiements'].append({"date":d['date_dette'],"montant":float(d['deja_paye'])})
+        res=dettes_col.insert_one(d)
+        return jsonify({"ok":True,"id":str(res.inserted_id)})
+    else:
+        b=request.args.get('boutique','')
+        rows=[serialize(r) for r in dettes_col.find({"boutique":b}).sort("datetime",-1)]
+        total_a_recup=sum(float(x.get('reste',0)) for x in rows if x.get('statut')!='paye')
+        mois_str=datetime.now().strftime("%m/%Y")
+        total_mois=0
+        for r in rows:
+            for p in r.get('paiements',[]):
+                if mois_str in p.get('date',''):
+                    total_mois+=float(p.get('montant',0))
+        nb=len([x for x in rows if x.get('statut')!='paye'])
+        return jsonify({"dettes":rows,"total_a_recup":total_a_recup,"total_recup_mois":total_mois,"nb":nb})
+
+@app.route('/api/dettes/payer', methods=['POST'])
+def api_dette_payer():
+    d=request.json
+    try: row=dettes_col.find_one({"_id":ObjectId(d['id'])})
+    except: return jsonify({"ok":False})
+    if not row: return jsonify({"ok":False})
+    montant=float(d['montant'])
+    new_reste=max(0,float(row.get('reste',0))-montant)
+    new_paye=float(row.get('deja_paye',0))+montant
+    statut='paye' if new_reste<=0 else 'en_cours'
+    dettes_col.update_one({"_id":row['_id']},{"$set":{"reste":new_reste,"deja_paye":new_paye,"statut":statut},"$push":{"paiements":{"date":datetime.now().strftime("%d/%m/%Y %H:%M"),"montant":montant}}})
+    return jsonify({"ok":True})
+
+@app.route('/api/dettes/<id>', methods=['DELETE'])
+def api_dette_del(id):
+    try: dettes_col.delete_one({"_id":ObjectId(id)})
     except: pass
     return jsonify({"ok":True})
 
