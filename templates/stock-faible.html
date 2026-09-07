@@ -1,7 +1,6 @@
 <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stock faible</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"><link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-<style>
-:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}body{background:var(--bg)}
+<style>:root{--primary:#1e293b;--accent:#f59e0b;--bg:#f8fafc}body{background:var(--bg)}
 .sidebar{width:260px;background:var(--primary);position:fixed;height:100vh;padding:22px;top:0;left:0;color:#cbd5e1;z-index:1000;transition:0.3s}
 .sidebar a{color:#94a3b8;text-decoration:none;display:block;padding:12px 14px;border-radius:12px;margin-bottom:8px}.sidebar a.active,.sidebar a:hover{background:#334155;color:#fff}
 .main{margin-left:260px;padding:20px 28px}.card{border:0;border-radius:18px;box-shadow:0 4px 20px rgba(0,0,0,.06)}
@@ -9,19 +8,17 @@
 .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:999}
 @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding-top:70px}.hamburger{display:block}.overlay.open{display:block}}
 </style></head><body>
-<button class="hamburger" onclick="toggleMenu()"><i class="bi bi-list fs-4"></i></button>
-<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<button class="hamburger" onclick="toggleMenu()"><i class="bi bi-list fs-4"></i></button><div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 <div class="sidebar" id="sidebar"><h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">Atlas • Alerte</small><hr style="border-color:#334155">
 <a href="/boutique"><i class="bi bi-grid-fill me-2"></i>Boutique</a><a href="/ventes"><i class="bi bi-cart-check-fill me-2"></i>Ventes</a><a href="/stock-faible" class="active" style="background:#ef4444;color:#fff;font-weight:700"><i class="bi bi-exclamation-triangle me-2"></i>Stock faible</a><a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a><a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center;margin-top:20px">Déconnexion</a></div>
-
-<div class="main">
-<h5 class="fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Produits en stock critique ( ≤5 ) - Atlas</h5>
-<div class="card p-4 mt-3"><div id="list"></div></div>
-</div>
+<div class="main"><h5 class="fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Produits en stock critique ( ≤5 bouteilles/pièces )</h5><div class="card p-4 mt-3"><div id="list"></div></div></div>
 <script>
 function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open');}
 let boutique=localStorage.getItem('boutique')||'Boutique Bibi Shop';document.getElementById('bName').innerText=boutique;
-async function load(){let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();let s=(j.stock||[]).filter(p=>p.qte<=5);let html='';if(s.length==0) html='<div class="text-center py-5"><h1>✅</h1><p class="text-muted">Aucun produit en alerte, tout va bien !</p></div>'; else s.forEach(p=>{let color=p.qte==0?'#ef4444':p.qte<=2?'#f97316':'#f59e0b';html+=`<div class="d-flex justify-content-between align-items-center border-bottom py-3 flex-wrap gap-2" style="border-left:5px solid ${color};padding-left:12px;border-radius:6px;margin-bottom:8px;background:#fff"><div><b>${p.nom}</b> <span class="badge bg-light text-dark">${p.groupe}</span><br><small class="text-muted">${p.qte} ${p.unite} restant • Vente ${p.vente} FCFA</small></div><div class="d-flex gap-2"><button class="btn btn-sm rounded-pill text-white" style="background:var(--primary)" onclick="recharge('${p._id}','${p.nom.replace(/'/g,"\\'")}')">+ Recharger</button><a href="https://wa.me/?text=Je dois acheter ${p.nom} urgent stock ${p.qte}" target="_blank" class="btn btn-sm rounded-pill" style="background:#25D366;color:#fff"><i class="bi bi-whatsapp"></i> Commander</a></div></div>`});document.getElementById('list').innerHTML=html;}
-async function recharge(id,nom){let q=prompt('Recharger combien pour '+nom+'?', '10');if(!q)return;q=parseFloat(q);await fetch('/api/mouvement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,boutique,produit:nom,type:'Rechargé',qte:q})});load();}
+function sb(p){return p.stock_base ?? p.qte ?? 0}
+function ub(p){return p.unite_base ?? p.unite ?? 'btl'}
+function vb(p){return p.vente_base ?? p.vente ?? 0}
+async function load(){let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();let s=(j.stock||[]).filter(p=>sb(p)<=5);let html='';if(s.length==0) html='<div class="text-center py-5"><h1>✅</h1><p class="text-muted">Aucun produit en alerte, tout va bien !</p></div>'; else s.forEach(p=>{let color=sb(p)==0?'#ef4444':sb(p)<=2?'#f97316':'#f59e0b';html+=`<div class="d-flex justify-content-between align-items-center border-bottom py-3 flex-wrap gap-2" style="border-left:5px solid ${color};padding-left:12px;border-radius:6px;margin-bottom:8px;background:#fff"><div><b>${p.nom}</b> <span class="badge bg-light text-dark">${p.groupe}</span><br><small class="text-muted">${sb(p)} ${ub(p)} restant • Vente ${vb(p)} FCFA</small></div><div class="d-flex gap-2"><button class="btn btn-sm rounded-pill text-white" style="background:var(--primary)" onclick="recharge('${p._id}','${p.nom.replace(/'/g,"\\'")}')">+ Recharger</button></div></div>`});document.getElementById('list').innerHTML=html;}
+async function recharge(id,nom){let q=prompt('Recharger combien de bouteilles/pièces pour '+nom+'?', '10');if(!q)return;q=parseFloat(q);await fetch('/api/mouvement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,boutique,produit:nom,type:'Rechargé',qte:q})});load();}
 load();
 </script></body></html>
