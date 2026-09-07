@@ -12,9 +12,36 @@
 <button class="hamburger" onclick="toggleMenu()"><i class="bi bi-list fs-4"></i></button><div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 <div class="sidebar" id="sidebar">
 <h5 class="text-white fw-bold" id="bName">Boutique</h5><small style="color:var(--accent)">ATLAS • Chic Luxe</small><hr style="border-color:#334155">
-<a href="/boutique" class="active"><i class="bi bi-grid-fill me-2"></i>Boutique</a><a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a><a href="/ventes"><i class="bi bi-cart-check-fill me-2"></i>Ventes rapide</a><a href="/commande"><i class="bi bi-receipt me-2"></i>Commande / Facture</a><a href="/factures"><i class="bi bi-file-earmark-text me-2"></i>Factures</a><a href="/depenses"><i class="bi bi-cash-stack me-2"></i>Dépenses</a><a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a><a href="/categories"><i class="bi bi-tags me-2"></i>Catégories</a><a href="/statistiques"><i class="bi bi-graph-up me-2"></i>Statistiques</a><a href="/stock-faible"><i class="bi bi-exclamation-triangle me-2"></i>Stock faible</a>
+<a href="/boutique" class="active"><i class="bi bi-grid-fill me-2"></i>Boutique</a>
+<a href="/historique"><i class="bi bi-clock-history me-2"></i>Historique</a>
+<a href="/ventes"><i class="bi bi-cart-check-fill me-2"></i>Ventes rapide</a>
+<a href="/commande"><i class="bi bi-receipt me-2"></i>Commande / Facture</a>
+<a href="/dettes" style="background:#ef4444;color:#fff;font-weight:700"><i class="bi bi-person-lines-fill me-2"></i>Dettes / Crédits <span id="badgeDette" class="badge bg-light text-danger ms-2" style="display:none">0</span></a>
+<a href="/factures"><i class="bi bi-file-earmark-text me-2"></i>Factures</a>
+<a href="/depenses"><i class="bi bi-cash-stack me-2"></i>Dépenses</a>
+<a href="/enregistrer"><i class="bi bi-plus-circle me-2"></i>Enregistrer</a>
+<a href="/categories"><i class="bi bi-tags me-2"></i>Catégories</a>
+<a href="/statistiques"><i class="bi bi-graph-up me-2"></i>Statistiques</a>
+<a href="/stock-faible"><i class="bi bi-exclamation-triangle me-2"></i>Stock faible</a>
 <div style="margin-top:20px"><a href="/" style="background:#0f172a;color:#fff;padding:12px;border-radius:12px;display:block;text-align:center">Déconnexion</a></div></div>
 <div class="main">
+
+<!-- BANDEAU DETTES NOUVEAU -->
+<div class="row g-3 mb-4" id="blocDettes" style="display:none">
+  <div class="col-12">
+    <div class="card p-3" style="border-left:6px solid #ef4444; background: #fff7ed;">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h6 class="fw-bold mb-1"><i class="bi bi-person-lines-fill me-2 text-danger"></i>💳 Dettes clients à récupérer</h6>
+          <small class="fw-bold" id="resumeDette" style="color:#ef4444">Chargement...</small><br>
+          <small class="text-muted" id="resumeDette2"></small>
+        </div>
+        <a href="/dettes" class="btn rounded-pill fw-bold px-4 py-2" style="background:#ef4444;color:#fff"><i class="bi bi-eye me-1"></i> Voir toutes mes dettes →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="row g-3 mb-4"><div class="col-md-3"><div class="card p-4"><small class="text-muted">Références</small><h2 id="tRef">0</h2></div></div><div class="col-md-3"><div class="card p-4"><small class="text-muted">Qté totale (btl/pc)</small><h2 id="tQte">0</h2></div></div><div class="col-md-3"><div class="card p-4"><small class="text-muted">Valeur achat</small><h2 id="tAchat">0</h2></div></div><div class="col-md-3"><div class="card p-4" style="background:var(--primary);color:white"><small style="color:var(--accent)">Valeur vente</small><h2 id="tVente">0</h2><small id="tBen" style="color:var(--accent)">Bénéf: 0</small></div></div></div>
 <div id="alertG" class="alert rounded-4" style="display:none;background:var(--accent);color:#000;font-weight:600"></div>
 <div class="row g-3 mb-4"><div class="col-md-5"><div class="card p-4"><h6 class="fw-bold">📊 Répartition par catégorie</h6><canvas id="pie"></canvas></div></div><div class="col-md-7"><div class="card p-4"><h6 class="fw-bold">⚠️ Alertes stock ≤5</h6><canvas id="bar"></canvas></div></div></div>
@@ -26,6 +53,23 @@ function sb(p){return p.stock_base ?? p.qte ?? 0}
 function vb(p){return p.vente_base ?? p.vente ?? 0}
 function ab(p){return p.achat_base ?? p.achat ?? 0}
 function ub(p){return p.unite_base ?? p.unite ?? 'btl'}
+
+async function loadResumeDettes(){
+  try{
+    let r=await fetch('/api/dettes?boutique='+encodeURIComponent(boutique));
+    let j=await r.json();
+    if(j.nb>0){
+      document.getElementById('blocDettes').style.display='block';
+      document.getElementById('resumeDette').innerText=`${j.nb} personnes doivent ${j.total_a_recup.toLocaleString()} FCFA`;
+      document.getElementById('resumeDette2').innerText=`Récupéré ce mois: ${j.total_recup_mois.toLocaleString()} FCFA`;
+      document.getElementById('badgeDette').style.display='inline-block';
+      document.getElementById('badgeDette').innerText=j.nb;
+    }else{
+      document.getElementById('blocDettes').style.display='none';
+    }
+  }catch(e){}
+}
+
 async function loadAll(){
 let r=await fetch('/api/stock?boutique='+encodeURIComponent(boutique));let j=await r.json();stock=j.stock;
 let ach=stock.reduce((a,b)=>a+sb(b)*ab(b),0);let ven=stock.reduce((a,b)=>a+sb(b)*vb(b),0);
@@ -33,7 +77,9 @@ document.getElementById('tRef').innerText=stock.length;document.getElementById('
 let f=stock.filter(s=>sb(s)<=5);document.getElementById('alertG').style.display=f.length?'block':'none';if(f.length)document.getElementById('alertG').innerText=`⚠️ ${f.length} produits en alerte: ${f.map(x=>x.nom).join(', ')}`;
 let byCat={};stock.forEach(s=>byCat[s.groupe]=(byCat[s.groupe]||0)+Number(sb(s)));if(pieChart)pieChart.destroy();pieChart=new Chart(document.getElementById('pie'),{type:'doughnut',data:{labels:Object.keys(byCat),datasets:[{data:Object.values(byCat),backgroundColor:['#1e293b','#f59e0b','#10b981','#ef4444','#8b5cf6']}]},options:{plugins:{legend:{position:'bottom'}}}});
 let top=[...stock].sort((a,b)=>sb(a)-sb(b)).slice(0,6);if(barChart)barChart.destroy();barChart=new Chart(document.getElementById('bar'),{type:'bar',data:{labels:top.map(s=>s.nom),datasets:[{data:top.map(s=>sb(s)),backgroundColor:'#f59e0b',borderRadius:8}]},options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
-let h='';stock.forEach(p=>{h+=`<div class="d-flex justify-content-between align-items-center border-bottom py-3 flex-wrap gap-2"><div><b>${p.nom}</b> <span class="badge rounded-pill" style="background:#f1f5f9;color:#1e293b">${p.groupe}</span><br><small class="text-muted">${sb(p)} ${ub(p)} • Achat ${ab(p)} • Vente ${vb(p)}</small></div><div class="d-flex gap-2"><button class="btn btn-sm rounded-pill px-3" style="background:#1e293b;color:#fff" onclick="mouv('${p._id}','${p.nom.replace(/'/g,"\\'")}', 'Vendu')"><i class="bi bi-cart-dash"></i> Vendre</button><button class="btn btn-sm btn-gold px-3" onclick="mouv('${p._id}','${p.nom.replace(/'/g,"\\'")}', 'Rechargé')"><i class="bi bi-plus"></i> Stock</button><a href="/enregistrer?id=${p._id}" class="btn btn-sm btn-light rounded-pill">Modifier</a><button class="btn btn-sm btn-light text-danger rounded-pill" onclick="delP('${p._id}')"><i class="bi bi-trash"></i></button></div></div>`;});document.getElementById('list').innerHTML=h||'<p class="text-muted p-3">Aucun produit.</p>';}
+let h='';stock.forEach(p=>{h+=`<div class="d-flex justify-content-between align-items-center border-bottom py-3 flex-wrap gap-2"><div><b>${p.nom}</b> <span class="badge rounded-pill" style="background:#f1f5f9;color:#1e293b">${p.groupe}</span><br><small class="text-muted">${sb(p)} ${ub(p)} • Achat ${ab(p)} • Vente ${vb(p)}</small></div><div class="d-flex gap-2"><button class="btn btn-sm rounded-pill px-3" style="background:#1e293b;color:#fff" onclick="mouv('${p._id}','${p.nom.replace(/'/g,"\\'")}', 'Vendu')"><i class="bi bi-cart-dash"></i> Vendre</button><button class="btn btn-sm btn-gold px-3" onclick="mouv('${p._id}','${p.nom.replace(/'/g,"\\'")}', 'Rechargé')"><i class="bi bi-plus"></i> Stock</button><a href="/enregistrer?id=${p._id}" class="btn btn-sm btn-light rounded-pill">Modifier</a><button class="btn btn-sm btn-light text-danger rounded-pill" onclick="delP('${p._id}')"><i class="bi bi-trash"></i></button></div></div>`;});document.getElementById('list').innerHTML=h||'<p class="text-muted p-3">Aucun produit.</p>';
+loadResumeDettes();
+}
 async function delP(id){if(!confirm('Supprimer?'))return;await fetch('/api/stock/'+id,{method:'DELETE'});loadAll();}
 async function mouv(id,nom,type){let q=prompt(`${type} - Quantité en BOUTEILLES/PIÈCES pour ${nom}?`, '1');if(!q)return;q=parseFloat(q);if(q<=0){alert('Quantité invalide');return;}let prod=stock.find(s=>s._id==id);if(type=='Vendu'&&sb(prod)<q){alert(`Stock insuffisant! Reste ${sb(prod)}`);return;}let res=await fetch('/api/mouvement',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,boutique,produit:nom,type,qte:q})});let j=await res.json();if(j.ok){alert(type=='Vendu'?`✅ Vendu ${q} x ${nom}`:`✅ Rechargé ${q} x ${nom}`);loadAll();}}
 loadAll();
