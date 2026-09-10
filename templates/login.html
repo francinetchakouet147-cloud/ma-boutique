@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 <style>
 body{background:linear-gradient(135deg,#6a11cb 0%,#2575fc 100%);display:flex;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif}
-.card-login{width:100%;max-width:400px;border-radius:20px;border:none;box-shadow:0 15px 35px rgba(0,0,0,0.2);overflow:hidden}
+.card-login{width:100%;max-width:420px;border-radius:20px;border:none;box-shadow:0 15px 35px rgba(0,0,0,0.2);overflow:hidden}
 .header{background:white;padding:30px 20px 10px;text-align:center}
 .avatar{width:85px;height:85px;margin:0 auto 15px;background:linear-gradient(135deg,#6a11cb,#2575fc);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:42px;box-shadow:0 5px 15px rgba(106,17,203,0.4)}
 .body-login{padding:20px 30px 30px;background:white}
@@ -17,30 +17,30 @@ body{background:linear-gradient(135deg,#6a11cb 0%,#2575fc 100%);display:flex;ali
 <div class="card card-login">
   <div class="header">
     <div class="avatar"><i class="bi bi-shop"></i></div>
-    <h4 class="fw-bold mb-1" style="font-size:28px;letter-spacing:1px;line-height:1.2">ATLAS GESTION STOCK</h4>
+    <h4 class="fw-bold mb-1" style="font-size:28px;letter-spacing:1px">ATLAS GESTION STOCK</h4>
     <p class="text-muted small mb-0">Gestion de stock</p>
   </div>
   <div class="body-login">
-    <div class="mb-3"><label class="form-label small fw-semibold"><i class="bi bi-person"></i> Nom d'utilisateur</label><input id="nom" class="form-control" placeholder=""></div>
-    <div class="mb-4"><label class="form-label small fw-semibold"><i class="bi bi-lock"></i> Mot de passe</label><input id="pass" type="password" class="form-control" placeholder="••••••••"></div>
+    <div class="mb-3"><label class="form-label small fw-semibold"><i class="bi bi-person"></i> Nom d'utilisateur</label><input id="nom" class="form-control" placeholder="ex: bibi123"></div>
+    <div class="mb-3"><label class="form-label small fw-semibold"><i class="bi bi-lock"></i> Mot de passe</label><input id="pass" type="password" class="form-control" placeholder="••••••••"></div>
     <button class="btn btn-primary w-100" onclick="connecter()">Se connecter <i class="bi bi-arrow-right ms-1"></i></button>
-    <div id="msg" class="mt-3"></div>
-    <div class="d-flex justify-content-between mt-3">
-      <a href="#" onclick="openCreation()" class="small text-decoration-none">Vous n'avez pas de compte? Cliquez ici</a>
-      <a href="#" onclick="openOublie()" class="small text-decoration-none">Identifiant oublié?</a>
+    <div id="msg" class="mt-2"></div>
+    <div class="text-center mt-3">
+      <a href="#" onclick="openCreation()" class="small text-decoration-none d-block mb-2">Vous n'avez pas de compte? Cliquez ici</a>
+      <a href="#" onclick="openOublie()" class="small text-decoration-none text-muted">Identifiant oublié?</a>
     </div>
-    <div class="text-center mt-4"><small class="text-muted"></small></div>
+    <div class="text-center mt-3"><small class="text-muted">© 2026 ATLAS</small></div>
   </div>
 </div>
 
-<!-- MODAL CREATION -->
+<!-- MODAL CREATION - 4 CHAMPS AVEC LIBELLES -->
 <div class="modal fade" id="modalCrea"><div class="modal-dialog"><div class="modal-content rounded-4">
 <div class="modal-header"><h5>Créer un compte</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body">
-<input id="cr_nom" class="form-control mb-2 rounded-pill" placeholder="Votre Nom">
-<input id="cr_boutique" class="form-control mb-2 rounded-pill" placeholder="Nom / Numéro boutique">
-<input id="cr_tel" class="form-control mb-2 rounded-pill" placeholder="Numéro WhatsApp">
-<input id="cr_nomvoulu" class="form-control mb-2 rounded-pill" placeholder="Nom d'utilisateur voulu">
+<label class="small fw-bold">Nom d'utilisateur</label><input id="cr_nomvoulu" class="form-control mb-2 rounded-pill" placeholder="ex: bibi123">
+<label class="small fw-bold">Nom de la boutique</label><input id="cr_boutique" class="form-control mb-2 rounded-pill" placeholder="ex: Boutique Bibi">
+<label class="small fw-bold">Numéro de téléphone</label><input id="cr_tel" class="form-control mb-2 rounded-pill" placeholder="ex: 6 90 12 34 56">
+<label class="small fw-bold">Mot de passe</label><input id="cr_pass" type="password" class="form-control mb-2 rounded-pill" placeholder="min 4 caractères">
 </div>
 <div class="modal-footer"><button class="btn btn-primary w-100 rounded-pill" onclick="sendCreation()">Envoyer la demande</button></div>
 </div></div></div>
@@ -49,7 +49,7 @@ body{background:linear-gradient(135deg,#6a11cb 0%,#2575fc 100%);display:flex;ali
 <div class="modal fade" id="modalOub"><div class="modal-dialog"><div class="modal-content rounded-4">
 <div class="modal-header"><h5>Identifiant oublié</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body">
-<input id="ob_id" class="form-control mb-3 rounded-pill" placeholder="Entrez votre Tel ou Nom boutique">
+<input id="ob_id" class="form-control mb-3 rounded-pill" placeholder="Tel ou Nom boutique">
 <label class="small fw-bold">Qu'avez-vous oublié?</label>
 <select id="ob_type" class="form-select rounded-pill">
 <option value="nom">J'ai oublié mon NOM</option>
@@ -57,7 +57,7 @@ body{background:linear-gradient(135deg,#6a11cb 0%,#2575fc 100%);display:flex;ali
 <option value="lesdeux">J'ai oublié LES DEUX</option>
 </select>
 </div>
-<div class="modal-footer"><button class="btn btn-warning w-100 rounded-pill" onclick="sendOublie()">Envoyer la demande</button></div>
+<div class="modal-footer"><button class="btn btn-warning w-100 rounded-pill" onclick="sendOublie()">Envoyer</button></div>
 </div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -66,31 +66,35 @@ async function connecter(){
  let nom=document.getElementById('nom').value.trim().toLowerCase();
  let pass=document.getElementById('pass').value.trim();
  if(!nom||!pass) return alert('Remplis tout');
- let btn=document.querySelector('button'); btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Connexion...'; btn.disabled=true;
+ let btn=document.querySelector('.body-login.btn-primary'); let old=btn.innerHTML; btn.innerHTML='<span class="spinner-border spinner-border-sm"></span>'; btn.disabled=true;
  let r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom,pass})});
- let res=await r.json(); btn.innerHTML='Se connecter <i class="bi bi-arrow-right ms-1"></i>'; btn.disabled=false;
- if(!res.ok){ document.getElementById('msg').innerHTML=`<div class="alert alert-danger rounded-3 py-2 small"><i class="bi bi-exclamation-triangle"></i> ${res.msg}</div>`; return; }
+ let res=await r.json(); btn.innerHTML=old; btn.disabled=false;
+ if(!res.ok){ document.getElementById('msg').innerHTML=`<div class="alert alert-danger rounded-3 py-2 small">${res.msg}</div>`; return; }
  if(res.role==='admin'){ localStorage.setItem('session','admin'); location.href='/admin'; return; }
  if(res.premiere){
    let n1=prompt("PREMIÈRE CONNEXION\nCrée ton nouveau mot de passe:"); if(!n1||n1.length<4) return alert('4 caractères minimum');
    let n2=prompt("Confirme:"); if(n1!==n2) return alert('pas pareil');
    await fetch(`/api/clients/${res.client._id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({newpass:n1})});
-   alert('✅ Mot de passe changé! Reconnecte-toi avec '+n1); location.reload(); return;
+   alert('Mot de passe changé! Reconnecte-toi avec '+n1); location.reload(); return;
  }
  localStorage.setItem('client',JSON.stringify(res.client)); localStorage.setItem('boutique',res.client.boutique); location.href='/boutique';
 }
 function openCreation(){ new bootstrap.Modal(document.getElementById('modalCrea')).show(); }
 function openOublie(){ new bootstrap.Modal(document.getElementById('modalOub')).show(); }
 async function sendCreation(){
- let data={nom:document.getElementById('cr_nom').value, boutique:document.getElementById('cr_boutique').value, tel:document.getElementById('cr_tel').value, nom_voulu:document.getElementById('cr_nomvoulu').value};
- if(!data.nom||!data.boutique||!data.tel||!data.nom_voulu) return alert('Remplis tout');
- await fetch('/api/demande-creation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
- alert('Demande envoyée à l admin. Tu recevras ton code 1234 sur WhatsApp'); bootstrap.Modal.getInstance(document.getElementById('modalCrea')).hide();
+ let nom_voulu=document.getElementById('cr_nomvoulu').value.trim();
+ let boutique=document.getElementById('cr_boutique').value.trim();
+ let tel=document.getElementById('cr_tel').value.trim();
+ let pass=document.getElementById('cr_pass').value.trim();
+ if(!nom_voulu||!boutique||!tel||!pass) return alert('Remplis tous les champs');
+ if(pass.length<4) return alert('Mot de passe 4 caractères minimum');
+ await fetch('/api/demande-creation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom_voulu,boutique,tel,pass})});
+ alert('Demande envoyée. Admin va te confirmer sur WhatsApp'); bootstrap.Modal.getInstance(document.getElementById('modalCrea')).hide();
 }
 async function sendOublie(){
- let identifiant=document.getElementById('ob_id').value; let type=document.getElementById('ob_type').value;
+ let identifiant=document.getElementById('ob_id').value.trim(); let type=document.getElementById('ob_type').value;
  if(!identifiant) return alert('Entre ton tel ou boutique');
  await fetch('/api/demande-oublie',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiant,type})});
- alert('Demande envoyée. Admin va te répondre sur WhatsApp'); bootstrap.Modal.getInstance(document.getElementById('modalOub')).hide();
+ alert('Demande envoyée'); bootstrap.Modal.getInstance(document.getElementById('modalOub')).hide();
 }
 </script></body></html>
