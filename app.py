@@ -12,7 +12,7 @@ def static_files(filename):
 
 MONGO_URI = os.environ.get("MONGO_URI") or os.environ.get("MONGODB_URI")
 if not MONGO_URI:
-    raise Exception("MONGO_URI manquant dans Render > Environment")
+    raise Exception("MONGO_URI manquant")
 
 client_mongo = MongoClient(MONGO_URI)
 db_mongo = client_mongo["ma-boutique"]
@@ -79,14 +79,15 @@ def api_login():
     if is_premiere: return jsonify({'ok':True,'role':'client','premiere':True, 'client':cl_serialized})
     return jsonify({'ok':True,'role':'client','premiere':False, 'client':cl_serialized})
 
+# DEMANDE CREATION - AVEC MOT DE PASSE DU CLIENT
 @app.route('/api/demande-creation', methods=['POST'])
 def demande_creation():
     d=request.json
     demande_crea_col.insert_one({
-        "nom": d.get('nom','').strip(),
+        "nom_voulu": d.get('nom_voulu','').lower().strip(),
         "boutique": d.get('boutique','').strip(),
         "tel": d.get('tel','').strip(),
-        "nom_voulu": d.get('nom_voulu','').lower().strip(),
+        "pass": d.get('pass','').strip(),
         "date": datetime.now().isoformat(),
         "statut": "en_attente"
     })
@@ -104,7 +105,15 @@ def accepter_crea(id):
     if not dem: return jsonify({'ok':False})
     if clients_col.find_one({"nom": dem['nom_voulu'].lower()}):
         return jsonify({'ok':False,'msg':'Nom déjà utilisé'})
-    clients_col.insert_one({"nom":dem['nom_voulu'].lower(),"tel":dem['tel'],"boutique":dem['boutique'],"pass":"1234","premiere":1,"bloque":0})
+    # Creation avec le mot de passe qu'il a choisi, pas de premiere
+    clients_col.insert_one({
+        "nom":dem['nom_voulu'].lower(),
+        "tel":dem['tel'],
+        "boutique":dem['boutique'],
+        "pass":dem.get('pass','1234'),
+        "premiere":0,
+        "bloque":0
+    })
     demande_crea_col.update_one({"_id":ObjectId(id)},{"$set":{"statut":"accepte"}})
     return jsonify({'ok':True})
 
@@ -114,6 +123,7 @@ def refuser_crea(id):
     except: pass
     return jsonify({'ok':True})
 
+# DEMANDE OUBLIE
 @app.route('/api/demande-oublie', methods=['POST'])
 def demande_oublie():
     d=request.json
@@ -149,7 +159,11 @@ def del_oublie(id):
 
 @app.route('/api/clients')
 def api_clients():
-    rows=list(clients_col.find({"nom":{"$ne":"aurelie"}}))
+    q=request.args.get('q','').lower().strip()
+    if q:
+        rows=list(clients_col.find({"nom":{"$ne":"aurelie"}, "$or":[{"nom":{"$regex":q}},{"boutique":{"$regex":q}},{"tel":{"$regex":q}}]}))
+    else:
+        rows=list(clients_col.find({"nom":{"$ne":"aurelie"}}))
     return jsonify([serialize(r) for r in rows])
 
 @app.route('/api/clients/<id>', methods=['PUT','DELETE'])
@@ -204,7 +218,7 @@ def api_mouv():
     d=request.json
     try: row=stock_col.find_one({"_id":ObjectId(d['id'])})
     except: row=stock_col.find_one({"boutique":d['boutique'],"nom":d['produit']})
-    if not row: return jsonify({'ok':False, 'msg':'produit introuvable'})
+    if not row: return jsonify({'ok':False})
     qte_base = float(d['qte'])
     stock_actuel = float(row.get('stock_base', row.get('qte',0)))
     nq_base = stock_actuel - qte_base if d['type']=='Vendu' else stock_actuel + qte_base
