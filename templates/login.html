@@ -21,9 +21,9 @@ body{background:linear-gradient(135deg,#6a11cb 0%,#2575fc 100%);display:flex;ali
     <p class="text-muted small mb-0"></p>
   </div>
   <div class="body-login">
-    <div class="mb-3"><label class="form-label small fw-semibold"><i class="bi bi-person"></i> Nom d'utilisateur</label><input id="nom" class="form-control" placeholder=""></div>
+    <div class="mb-3"><label class="form-label small fw-semibold"><i class="bi bi-person"></i> Nom d'utilisateur</label><input id="nom" class="form-control" placeholder="aurelie"></div>
     <div class="mb-3"><label class="form-label small fw-semibold"><i class="bi bi-lock"></i> Mot de passe</label><input id="pass" type="password" class="form-control" placeholder="••••••••"></div>
-    <button class="btn btn-primary w-100" onclick="connecter()">Se connecter <i class="bi bi-arrow-right ms-1"></i></button>
+    <button id="btnLogin" class="btn btn-primary w-100" onclick="connecter()">Se connecter <i class="bi bi-arrow-right ms-1"></i></button>
     <div id="msg" class="mt-2"></div>
     <div class="text-center mt-3">
       <a href="#" onclick="openCreation()" class="small text-decoration-none d-block mb-2">Vous n'avez pas de compte? Cliquez ici</a>
@@ -33,19 +33,17 @@ body{background:linear-gradient(135deg,#6a11cb 0%,#2575fc 100%);display:flex;ali
   </div>
 </div>
 
-<!-- MODAL CREATION - 4 CHAMPS AVEC LIBELLES -->
 <div class="modal fade" id="modalCrea"><div class="modal-dialog"><div class="modal-content rounded-4">
 <div class="modal-header"><h5>Créer un compte</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body">
-<label class="small fw-bold">Nom d'utilisateur</label><input id="cr_nomvoulu" class="form-control mb-2 rounded-pill" placeholder="">
-<label class="small fw-bold">Nom de la boutique</label><input id="cr_boutique" class="form-control mb-2 rounded-pill" placeholder="">
-<label class="small fw-bold">Numéro de téléphone</label><input id="cr_tel" class="form-control mb-2 rounded-pill" placeholder="">
+<label class="small fw-bold">Nom d'utilisateur</label><input id="cr_nomvoulu" class="form-control mb-2 rounded-pill" placeholder="ex: bibi123">
+<label class="small fw-bold">Nom de la boutique</label><input id="cr_boutique" class="form-control mb-2 rounded-pill" placeholder="ex: Boutique Bibi">
+<label class="small fw-bold">Numéro de téléphone</label><input id="cr_tel" class="form-control mb-2 rounded-pill" placeholder="ex: 6 90 12 34 56">
 <label class="small fw-bold">Mot de passe</label><input id="cr_pass" type="password" class="form-control mb-2 rounded-pill" placeholder="min 4 caractères">
 </div>
 <div class="modal-footer"><button class="btn btn-primary w-100 rounded-pill" onclick="sendCreation()">Envoyer la demande</button></div>
 </div></div></div>
 
-<!-- MODAL OUBLIE -->
 <div class="modal fade" id="modalOub"><div class="modal-dialog"><div class="modal-content rounded-4">
 <div class="modal-header"><h5>Identifiant oublié</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body">
@@ -66,18 +64,24 @@ async function connecter(){
  let nom=document.getElementById('nom').value.trim().toLowerCase();
  let pass=document.getElementById('pass').value.trim();
  if(!nom||!pass) return alert('Remplis tout');
- let btn=document.querySelector('.body-login.btn-primary'); let old=btn.innerHTML; btn.innerHTML='<span class="spinner-border spinner-border-sm"></span>'; btn.disabled=true;
- let r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom,pass})});
- let res=await r.json(); btn.innerHTML=old; btn.disabled=false;
- if(!res.ok){ document.getElementById('msg').innerHTML=`<div class="alert alert-danger rounded-3 py-2 small">${res.msg}</div>`; return; }
- if(res.role==='admin'){ localStorage.setItem('session','admin'); location.href='/admin'; return; }
- if(res.premiere){
-   let n1=prompt("PREMIÈRE CONNEXION\nCrée ton nouveau mot de passe:"); if(!n1||n1.length<4) return alert('4 caractères minimum');
-   let n2=prompt("Confirme:"); if(n1!==n2) return alert('pas pareil');
-   await fetch(`/api/clients/${res.client._id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({newpass:n1})});
-   alert('Mot de passe changé! Reconnecte-toi avec '+n1); location.reload(); return;
- }
- localStorage.setItem('client',JSON.stringify(res.client)); localStorage.setItem('boutique',res.client.boutique); location.href='/boutique';
+ let btn=document.getElementById('btnLogin');
+ let old=btn.innerHTML;
+ btn.innerHTML='<span class="spinner-border spinner-border-sm"></span> Connexion...';
+ btn.disabled=true;
+ try{
+  let r=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom,pass})});
+  let res=await r.json();
+  btn.innerHTML=old; btn.disabled=false;
+  if(!res.ok){ document.getElementById('msg').innerHTML=`<div class="alert alert-danger rounded-3 py-2 small">${res.msg}</div>`; return; }
+  if(res.role==='admin'){ localStorage.setItem('session','admin'); location.href='/admin'; return; }
+  if(res.premiere){
+    let n1=prompt("PREMIÈRE CONNEXION\nCrée ton nouveau mot de passe:"); if(!n1||n1.length<4) return alert('4 caractères minimum');
+    let n2=prompt("Confirme:"); if(n1!==n2) return alert('pas pareil');
+    await fetch(`/api/clients/${res.client._id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({newpass:n1})});
+    alert('Mot de passe changé! Reconnecte-toi avec '+n1); location.reload(); return;
+  }
+  localStorage.setItem('client',JSON.stringify(res.client)); localStorage.setItem('boutique',res.client.boutique); location.href='/boutique';
+ }catch(e){ btn.innerHTML=old; btn.disabled=false; alert('Erreur serveur'); }
 }
 function openCreation(){ new bootstrap.Modal(document.getElementById('modalCrea')).show(); }
 function openOublie(){ new bootstrap.Modal(document.getElementById('modalOub')).show(); }
