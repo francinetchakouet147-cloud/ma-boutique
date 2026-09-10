@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Boutique Aurélie - Connexion</title>
+<title>ATLAS GESTION STOCK</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 <style>
@@ -10,19 +10,57 @@ body{background:linear-gradient(135deg,#6a11cb 0%,#2575fc 100%);display:flex;ali
 .body-login{padding:20px 30px 30px;background:white}
 .form-control{border-radius:10px;padding:12px 15px;background:#f8f9fa;border:1px solid #e9ecef}
 .btn-primary{border-radius:10px;padding:12px;font-weight:600;border:none;background:linear-gradient(135deg,#6a11cb,#2575fc)}
-</style></head><link rel="manifest" href="/static/manifest.json">
+</style></head>
+<link rel="manifest" href="/static/manifest.json">
 <meta name="theme-color" content="#0d6efd">
-  <body>
+<body>
 <div class="card card-login">
-  <div class="header"><div class="avatar"><i class="bi bi-shop"></i></div><h4 class="fw-bold mb-1">Boutique Aurélie</h4><p class="text-muted small mb-0">Atlas • Gestion de stock</p></div>
+  <div class="header">
+    <div class="avatar"><i class="bi bi-shop"></i></div>
+    <h4 class="fw-bold mb-1" style="font-size:28px;letter-spacing:1px;line-height:1.2">ATLAS GESTION STOCK</h4>
+    <p class="text-muted small mb-0">Gestion de stock</p>
+  </div>
   <div class="body-login">
-    <div class="mb-3"><label class="form-label small fw-semibold"><i class="bi bi-person"></i> Nom d'utilisateur</label><input id="nom" class="form-control" placeholder="aurelie ou bibi"></div>
+    <div class="mb-3"><label class="form-label small fw-semibold"><i class="bi bi-person"></i> Nom d'utilisateur</label><input id="nom" class="form-control" placeholder="ex: bibi123"></div>
     <div class="mb-4"><label class="form-label small fw-semibold"><i class="bi bi-lock"></i> Mot de passe</label><input id="pass" type="password" class="form-control" placeholder="••••••••"></div>
     <button class="btn btn-primary w-100" onclick="connecter()">Se connecter <i class="bi bi-arrow-right ms-1"></i></button>
     <div id="msg" class="mt-3"></div>
-    <div class="text-center mt-4"><small class="text-muted">© 2026 Boutique Aurélie - Atlas</small></div>
+    <div class="d-flex justify-content-between mt-3">
+      <a href="#" onclick="openCreation()" class="small text-decoration-none">Vous n'avez pas de compte? Cliquez ici</a>
+      <a href="#" onclick="openOublie()" class="small text-decoration-none">Identifiant oublié?</a>
+    </div>
+    <div class="text-center mt-4"><small class="text-muted">© 2026 ATLAS</small></div>
   </div>
 </div>
+
+<!-- MODAL CREATION -->
+<div class="modal fade" id="modalCrea"><div class="modal-dialog"><div class="modal-content rounded-4">
+<div class="modal-header"><h5>Créer un compte</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+<input id="cr_nom" class="form-control mb-2 rounded-pill" placeholder="Votre Nom">
+<input id="cr_boutique" class="form-control mb-2 rounded-pill" placeholder="Nom / Numéro boutique">
+<input id="cr_tel" class="form-control mb-2 rounded-pill" placeholder="Numéro WhatsApp">
+<input id="cr_nomvoulu" class="form-control mb-2 rounded-pill" placeholder="Nom d'utilisateur voulu">
+</div>
+<div class="modal-footer"><button class="btn btn-primary w-100 rounded-pill" onclick="sendCreation()">Envoyer la demande</button></div>
+</div></div></div>
+
+<!-- MODAL OUBLIE -->
+<div class="modal fade" id="modalOub"><div class="modal-dialog"><div class="modal-content rounded-4">
+<div class="modal-header"><h5>Identifiant oublié</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal-body">
+<input id="ob_id" class="form-control mb-3 rounded-pill" placeholder="Entrez votre Tel ou Nom boutique">
+<label class="small fw-bold">Qu'avez-vous oublié?</label>
+<select id="ob_type" class="form-select rounded-pill">
+<option value="nom">J'ai oublié mon NOM</option>
+<option value="pass">J'ai oublié mon MOT DE PASSE</option>
+<option value="lesdeux">J'ai oublié LES DEUX</option>
+</select>
+</div>
+<div class="modal-footer"><button class="btn btn-warning w-100 rounded-pill" onclick="sendOublie()">Envoyer la demande</button></div>
+</div></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 async function connecter(){
  let nom=document.getElementById('nom').value.trim().toLowerCase();
@@ -37,8 +75,22 @@ async function connecter(){
    let n1=prompt("PREMIÈRE CONNEXION\nCrée ton nouveau mot de passe:"); if(!n1||n1.length<4) return alert('4 caractères minimum');
    let n2=prompt("Confirme:"); if(n1!==n2) return alert('pas pareil');
    await fetch(`/api/clients/${res.client._id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({newpass:n1})});
-   alert('✅ Mot de passe changé dans Atlas ! Reconnecte-toi avec '+n1); location.reload(); return;
+   alert('✅ Mot de passe changé! Reconnecte-toi avec '+n1); location.reload(); return;
  }
  localStorage.setItem('client',JSON.stringify(res.client)); localStorage.setItem('boutique',res.client.boutique); location.href='/boutique';
+}
+function openCreation(){ new bootstrap.Modal(document.getElementById('modalCrea')).show(); }
+function openOublie(){ new bootstrap.Modal(document.getElementById('modalOub')).show(); }
+async function sendCreation(){
+ let data={nom:document.getElementById('cr_nom').value, boutique:document.getElementById('cr_boutique').value, tel:document.getElementById('cr_tel').value, nom_voulu:document.getElementById('cr_nomvoulu').value};
+ if(!data.nom||!data.boutique||!data.tel||!data.nom_voulu) return alert('Remplis tout');
+ await fetch('/api/demande-creation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+ alert('Demande envoyée à l admin. Tu recevras ton code 1234 sur WhatsApp'); bootstrap.Modal.getInstance(document.getElementById('modalCrea')).hide();
+}
+async function sendOublie(){
+ let identifiant=document.getElementById('ob_id').value; let type=document.getElementById('ob_type').value;
+ if(!identifiant) return alert('Entre ton tel ou boutique');
+ await fetch('/api/demande-oublie',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({identifiant,type})});
+ alert('Demande envoyée. Admin va te répondre sur WhatsApp'); bootstrap.Modal.getInstance(document.getElementById('modalOub')).hide();
 }
 </script></body></html>
