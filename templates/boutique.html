@@ -42,9 +42,9 @@
   </div>
 </div>
 
-<div class="row g-3 mb-4"><div class="col-md-3"><div class="card p-4"><small class="text-muted">Références</small><h2 id="tRef">0</h2></div></div><div class="col-md-3"><div class="card p-4"><small class="text-muted">Qté totale (btl/pc)</small><h2 id="tQte">0</h2></div></div><div class="col-md-3"><div class="card p-4"><small class="text-muted">Valeur achat</small><h2 id="tAchat">0</h2></div></div><div class="col-md-3"><div class="card p-4" style="background:var(--primary);color:white"><small style="color:var(--accent)">Valeur vente</small><h2 id="tVente">0</h2><small id="tBen" style="color:var(--accent)">Bénéf: 0</small></div></div></div>
+<div class="row g-3 mb-4"><div class="col-md-3"><div class="card p-4"><small class="text-muted">Nombre catégorie de produits</small><h2 id="tRef">0</h2></div></div><div class="col-md-3"><div class="card p-4"><small class="text-muted">Qté totale de tous les produits</small><h2 id="tQte">0</h2></div></div><div class="col-md-3"><div class="card p-4"><small class="text-muted">Valeur achat</small><h2 id="tAchat">0</h2></div></div><div class="col-md-3"><div class="card p-4" style="background:var(--primary);color:white"><small style="color:var(--accent)">Valeur vente</small><h2 id="tVente">0</h2><small id="tBen" style="color:var(--accent)">Bénéf: 0</small></div></div></div>
 <div id="alertG" class="alert rounded-4" style="display:none;background:var(--accent);color:#000;font-weight:600"></div>
-<div class="row g-3 mb-4"><div class="col-md-5"><div class="card p-4"><h6 class="fw-bold">📊 Répartition par catégorie</h6><canvas id="pie"></canvas></div></div><div class="col-md-7"><div class="card p-4"><h6 class="fw-bold">⚠️ Alertes stock ≤5</h6><canvas id="bar"></canvas></div></div></div>
+<div class="row g-3 mb-4"><div class="col-md-5"><div class="card p-4"><h6 class="fw-bold">📊 Répartition par catégorie</h6><canvas id="pie"></canvas></div></div><div class="col-md-7"><div class="card p-4"><h6 class="fw-bold">Nombre de produits par catégorie</h6><canvas id="bar"></canvas></div></div></div>
 <div class="card p-4"><h6 class="fw-bold mb-3">📦 Mes produits</h6><div id="list"></div></div></div>
 <script>
 function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('open');}
