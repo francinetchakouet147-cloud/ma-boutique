@@ -21,7 +21,9 @@ stock_col = db_mongo["stock"]
 mouv_col = db_mongo["mouvements"]
 factures_col = db_mongo["factures"]
 depenses_col = db_mongo["depenses"]
-dettes_col = db_mongo["dettes"]  # NOUVEAU
+dettes_col = db_mongo["dettes"]
+demande_crea_col = db_mongo["demandes_creation"]
+demande_oublie_col = db_mongo["demandes_oublie"]
 
 def serialize(doc):
     if not doc: return None
@@ -77,18 +79,78 @@ def api_login():
     if is_premiere: return jsonify({'ok':True,'role':'client','premiere':True, 'client':cl_serialized})
     return jsonify({'ok':True,'role':'client','premiere':False, 'client':cl_serialized})
 
+@app.route('/api/demande-creation', methods=['POST'])
+def demande_creation():
+    d=request.json
+    demande_crea_col.insert_one({
+        "nom": d.get('nom','').strip(),
+        "boutique": d.get('boutique','').strip(),
+        "tel": d.get('tel','').strip(),
+        "nom_voulu": d.get('nom_voulu','').lower().strip(),
+        "date": datetime.now().isoformat(),
+        "statut": "en_attente"
+    })
+    return jsonify({'ok':True})
+
+@app.route('/api/demandes-creation')
+def list_demande_crea():
+    rows=[serialize(r) for r in demande_crea_col.find({"statut":"en_attente"}).sort("_id",-1)]
+    return jsonify(rows)
+
+@app.route('/api/demandes-creation/<id>/accepter', methods=['POST'])
+def accepter_crea(id):
+    try: dem=demande_crea_col.find_one({"_id":ObjectId(id)})
+    except: return jsonify({'ok':False})
+    if not dem: return jsonify({'ok':False})
+    if clients_col.find_one({"nom": dem['nom_voulu'].lower()}):
+        return jsonify({'ok':False,'msg':'Nom déjà utilisé'})
+    clients_col.insert_one({"nom":dem['nom_voulu'].lower(),"tel":dem['tel'],"boutique":dem['boutique'],"pass":"1234","premiere":1,"bloque":0})
+    demande_crea_col.update_one({"_id":ObjectId(id)},{"$set":{"statut":"accepte"}})
+    return jsonify({'ok':True})
+
+@app.route('/api/demandes-creation/<id>', methods=['DELETE'])
+def refuser_crea(id):
+    try: demande_crea_col.delete_one({"_id":ObjectId(id)})
+    except: pass
+    return jsonify({'ok':True})
+
+@app.route('/api/demande-oublie', methods=['POST'])
+def demande_oublie():
+    d=request.json
+    demande_oublie_col.insert_one({
+        "identifiant": d.get('identifiant','').strip(),
+        "type": d.get('type',''),
+        "date": datetime.now().isoformat(),
+        "statut": "en_attente"
+    })
+    return jsonify({'ok':True})
+
+@app.route('/api/demandes-oublie')
+def list_oublie():
+    rows=[serialize(r) for r in demande_oublie_col.find({"statut":"en_attente"}).sort("_id",-1)]
+    return jsonify(rows)
+
+@app.route('/api/demandes-oublie/<id>/reset', methods=['POST'])
+def reset_oublie(id):
+    try: dem=demande_oublie_col.find_one({"_id":ObjectId(id)})
+    except: return jsonify({'ok':False})
+    if dem and dem['type'] in ['pass','lesdeux']:
+        cl=clients_col.find_one({"$or":[{"tel":dem['identifiant']},{"boutique":dem['identifiant']},{"nom":dem['identifiant'].lower()}]})
+        if cl:
+            clients_col.update_one({"_id":cl['_id']},{"$set":{"pass":"1234","premiere":1}})
+    demande_oublie_col.update_one({"_id":ObjectId(id)},{"$set":{"statut":"traite"}})
+    return jsonify({'ok':True})
+
+@app.route('/api/demandes-oublie/<id>', methods=['DELETE'])
+def del_oublie(id):
+    try: demande_oublie_col.delete_one({"_id":ObjectId(id)})
+    except: pass
+    return jsonify({'ok':True})
+
 @app.route('/api/clients')
 def api_clients():
     rows=list(clients_col.find({"nom":{"$ne":"aurelie"}}))
     return jsonify([serialize(r) for r in rows])
-
-@app.route('/api/clients', methods=['POST'])
-def api_add():
-    d=request.json
-    if clients_col.find_one({"nom": d['nom'].lower()}):
-        return jsonify({'ok':False,'msg':'Nom déjà utilisé'})
-    clients_col.insert_one({"nom":d['nom'].lower().strip(),"tel":d['tel'],"boutique":d['boutique'],"pass":"1234","premiere":1,"bloque":0})
-    return jsonify({'ok':True})
 
 @app.route('/api/clients/<id>', methods=['PUT','DELETE'])
 def api_edit(id):
@@ -152,7 +214,6 @@ def api_mouv():
     mouv_col.insert_one({"boutique":d['boutique'],"produit":d['produit'],"groupe":row.get('groupe'),"type":d['type'],"qte":qte_base,"qte_affichee": d.get('qte_affichee', f"{qte_base} {row.get('unite_base','')}"),"unite_cmd": d.get('unite_cmd',''),"facteur": d.get('facteur',1),"achat":row.get('achat_base', row.get('achat')),"vente":row.get('vente_base', row.get('vente')),"date":now.strftime('%Y-%m-%d'),"heure":now.strftime('%H:%M'),"datetime":now.isoformat()})
     return jsonify({'ok':True})
 
-# ===== FACTURES =====
 @app.route('/api/factures', methods=['GET','POST'])
 def api_factures():
     if request.method == 'POST':
@@ -170,7 +231,6 @@ def del_facture(id):
     except: pass
     return jsonify({"ok":True})
 
-# ===== DEPENSES =====
 @app.route('/api/depenses', methods=['GET','POST'])
 def api_depenses():
     if request.method == 'POST':
@@ -192,7 +252,6 @@ def del_dep(id):
     except: pass
     return jsonify({"ok":True})
 
-# ===== DETTES / CREDITS =====
 @app.route('/api/dettes', methods=['GET','POST'])
 def api_dettes():
     if request.method=='POST':
