@@ -7,19 +7,20 @@ body{background:#f5f7fb;margin:0}
 .main{margin-left:260px;padding:20px}
 .btn-ham{display:none;position:fixed;top:10px;left:10px;z-index:1060;background:#0d6efd;color:white;border:none;width:45px;height:45px;border-radius:12px}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1040}
-.sidebar.menu-btn{text-align:left;color:white;background:rgba(255,255,255,0.15);border:none;margin-bottom:8px;border-radius:12px;padding:10px;width:100%}
-.sidebar.menu-btn:hover{background:white;color:#0d6efd}
+.menu-btn{text-align:left;color:white;background:rgba(255,255,255,0.15);border:none;margin-bottom:8px;border-radius:12px;padding:10px;width:100%}
+.menu-btn:hover{background:white;color:#0d6efd}
 @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding-top:65px}.btn-ham{display:flex;align-items:center;justify-content:center}.overlay.show{display:block}}
 </style></head><body>
 <button class="btn-ham" onclick="toggleMenu()"><i class="bi bi-list" style="font-size:26px"></i></button>
 <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+
 <div class="sidebar" id="sidebar"><h5>ATLAS GESTION STOCK</h5><p class="small">Admin</p><hr>
-<button class="menu-btn" onclick="showClients()"><i class="bi bi-people"></i> Clients (<span id="count">0</span>)</button>
-<button class="menu-btn" onclick="loadCreations()"><i class="bi bi-person-plus"></i> Demandes Création (<span id="countCre">0</span>)</button>
-<button class="menu-btn" onclick="loadOublies()"><i class="bi bi-key"></i> Oubliés (<span id="countOub">0</span>)</button>
-<button class="menu-btn" onclick="location.href='/commande'"><i class="bi bi-cart"></i> Commandes</button>
+<button class="menu-btn" onclick="showClients();toggleMenu()"><i class="bi bi-people"></i> Clients (<span id="count">0</span>)</button>
+<button class="menu-btn" onclick="loadCreations();toggleMenu()"><i class="bi bi-person-plus"></i> Demandes Création (<span id="countCre">0</span>)</button>
+<button class="menu-btn" onclick="loadOublies();toggleMenu()"><i class="bi bi-key"></i> Oubliés (<span id="countOub">0</span>)</button>
 <button class="menu-btn" onclick="location.href='/'"><i class="bi bi-box-arrow-in-right"></i> Connexion</button>
 <hr><button class="btn btn-light w-100 rounded-pill" onclick="location.href='/'">Déconnexion</button></div>
+
 <div class="main">
 <h4 id="titrePage">Tous mes clients <button class="btn btn-primary float-end rounded-pill" data-bs-toggle="modal" data-bs-target="#modalAdd" onclick="openAdd()">+ Nouveau</button></h4>
 <input id="searchClient" class="form-control rounded-pill mt-3" style="max-width:250px" placeholder="🔍 Rechercher..." onkeyup="load()">
@@ -29,22 +30,22 @@ body{background:#f5f7fb;margin:0}
 
 <div class="modal fade" id="modalAdd"><div class="modal-dialog"><div class="modal-content rounded-4"><div class="modal-header"><h5>Nouveau client</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="edit_id"><input id="c_nom" class="form-control mb-2 rounded-pill" placeholder="nom login"><input id="c_tel" class="form-control mb-2 rounded-pill" placeholder="tel"><input id="c_boutique" class="form-control mb-2 rounded-pill" placeholder="Boutique"></div><div class="modal-footer"><button class="btn btn-primary w-100 rounded-pill" onclick="saveClient()">Enregistrer avec 1234</button></div></div></div></div>
 
-<div class="modal fade" id="modalWA"><div class="modal-dialog"><div class="modal-content rounded-4"><div class="modal-header"><h5 id="wa_title">WhatsApp</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal fade" id="modalWA"><div class="modal-dialog"><div class="modal-content rounded-4"><div class="modal-header"><h5 id="wa_title">Envoyer WhatsApp</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body">
 <input type="hidden" id="wa_action_type"><input type="hidden" id="wa_action_id">
-<label class="small fw-bold">Numéro</label><input id="wa_tel" class="form-control mb-2 rounded-pill">
-<label class="small fw-bold">Message</label><textarea id="wa_msg" class="form-control mb-2 rounded-3" rows="5"></textarea>
+<label class="small fw-bold">Numéro de téléphone</label><input id="wa_tel" class="form-control mb-2 rounded-pill" placeholder="6xxxxxxxx">
+<label class="small fw-bold">Message à envoyer</label><textarea id="wa_msg" class="form-control mb-2 rounded-3" rows="5"></textarea>
 </div>
 <div class="modal-footer flex-column">
-<button class="btn btn-success w-100 rounded-pill" onclick="sendWA()"><i class="bi bi-whatsapp"></i> Envoyer WhatsApp</button>
-<button id="btnConfirm" class="btn btn-dark w-100 rounded-pill mt-2" onclick="confirmAction()">Confirmer</button>
+<button class="btn btn-success w-100 rounded-pill" onclick="sendWA()"><i class="bi bi-whatsapp"></i> Envoyer sur WhatsApp</button>
+<button id="btnConfirm" class="btn btn-dark w-100 rounded-pill mt-2" onclick="confirmAction()">Confirmer l'action</button>
 </div></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-let clientsData=[], tempDemandes=[];
+let clientsData=[], tempDemandes=[], tempOublies=[];
 function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
-function showClients(){document.getElementById('zoneDemandes').innerHTML='';document.getElementById('zoneClients').style.display='block';document.getElementById('titrePage').innerHTML='Tous mes clients <button class="btn btn-primary float-end rounded-pill" data-bs-toggle="modal" data-bs-target="#modalAdd" onclick="openAdd()">+ Nouveau</button>';}
+function showClients(){document.getElementById('zoneDemandes').innerHTML='';document.getElementById('zoneClients').style.display='block';}
 function openAdd(){document.getElementById('edit_id').value='';document.getElementById('c_nom').value='';document.getElementById('c_tel').value='';document.getElementById('c_boutique').value='';}
 async function load(){let q=document.getElementById('searchClient').value.trim();let url=q?`/api/clients?q=${encodeURIComponent(q)}`:'/api/clients';let r=await fetch(url);let cs=await r.json();clientsData=cs;document.getElementById('count').innerText=cs.length;let tb=document.getElementById('tbody');tb.innerHTML='';cs.forEach((c,i)=>{tb.innerHTML+=`<tr><td>${c.nom}</td><td>${c.tel}</td><td>${c.boutique}</td><td><span class="badge bg-dark">${c.pass}</span></td><td><span class="badge ${c.bloque?'bg-danger':'bg-success'}">${c.bloque?'Bloqué':'Actif'}</span></td><td><button class="btn btn-sm btn-info" onclick="editClient(${i})"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm ${c.bloque?'btn-success':'btn-warning'}" onclick="toggleBlock('${c._id}',${c.bloque?1:0})"><i class="bi bi-lock"></i></button> <button class="btn btn-sm btn-danger" onclick="suppr('${c._id}')">X</button></td></tr>`});}
 function editClient(i){let c=clientsData[i];document.getElementById('edit_id').value=c._id;document.getElementById('c_nom').value=c.nom;document.getElementById('c_tel').value=c.tel;document.getElementById('c_boutique').value=c.boutique;new bootstrap.Modal(document.getElementById('modalAdd')).show();}
@@ -52,32 +53,50 @@ async function saveClient(){let id=document.getElementById('edit_id').value.trim
 async function toggleBlock(id,b){await fetch(`/api/clients/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({bloque:b?0:1})});load();}
 async function suppr(id){if(!confirm('Supprimer?'))return;await fetch(`/api/clients/${id}`,{method:'DELETE'});load();}
 
-// LOGIQUE DEMANDE
-function openForm(type, index){
+// FORMULAIRE ACCEPTER / REFUSER
+function openFormCreation(type, index){
   let d=tempDemandes[index];
-  document.getElementById('wa_action_type').value=type;
-  document.getElementById('wa_action_id').value=d._id;
-  document.getElementById('wa_tel').value=d.tel || d.identifiant;
+  document.getElementById('wa_action_type').value=type; document.getElementById('wa_action_id').value=d._id;
+  document.getElementById('wa_tel').value=d.tel;
   if(type==='accepter'){
     document.getElementById('wa_title').innerText='Accepter - WhatsApp';
-    document.getElementById('wa_msg').value=`Salut ${d.nom_voulu},\nTon compte ATLAS a été créé avec succès.\nBoutique: ${d.boutique}\nNom: ${d.nom_voulu}\nMot de passe: ${d.pass}\nTu peux te connecter maintenant.`;
-    document.getElementById('btnConfirm').innerText='✅ Accepter + Créer'; document.getElementById('btnConfirm').className='btn btn-success w-100 rounded-pill mt-2';
-  } else {
+    document.getElementById('wa_msg').value=`Salut ${d.nom_voulu},\nTon compte ATLAS a été créé avec succès.\n\nBoutique: ${d.boutique}\nNom: ${d.nom_voulu}\nMot de passe: ${d.pass}\n\nTu peux te connecter maintenant.`;
+    document.getElementById('btnConfirm').innerText='✅ Confirmer Acceptation'; document.getElementById('btnConfirm').className='btn btn-success w-100 rounded-pill mt-2';
+  }else{
     document.getElementById('wa_title').innerText='Refuser - WhatsApp';
-    document.getElementById('wa_msg').value=`Salut ${d.nom_voulu},\nTa demande pour ${d.boutique} a été refusée.\nRaison: `;
+    document.getElementById('wa_msg').value=`Salut ${d.nom_voulu},\nTa demande pour ${d.boutique} a été refusée.\n\nRaison: `;
     document.getElementById('btnConfirm').innerText='❌ Confirmer Refus'; document.getElementById('btnConfirm').className='btn btn-danger w-100 rounded-pill mt-2';
   }
   new bootstrap.Modal(document.getElementById('modalWA')).show();
 }
+function openFormOublie(index){
+  let d=tempOublies[index];
+  document.getElementById('wa_action_type').value='oublie'; document.getElementById('wa_action_id').value=d._id;
+  document.getElementById('wa_tel').value=d.identifiant;
+  document.getElementById('wa_title').innerText='Oublié - WhatsApp';
+  document.getElementById('wa_msg').value=`Salut, ton mot de passe ATLAS a été réinitialisé à 1234.\nConnecte-toi et change-le.\n\nIdentifiant: ${d.identifiant}`;
+  document.getElementById('btnConfirm').innerText='🔑 Reset à 1234'; document.getElementById('btnConfirm').className='btn btn-warning w-100 rounded-pill mt-2';
+  new bootstrap.Modal(document.getElementById('modalWA')).show();
+}
 function sendWA(){let tel=document.getElementById('wa_tel').value.replace(/[^0-9]/g,'');let msg=document.getElementById('wa_msg').value.trim();if(!tel||!msg)return alert('Remplis tout');window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`,'_blank');}
-async function confirmAction(){let type=document.getElementById('wa_action_type').value;let id=document.getElementById('wa_action_id').value;if(type==='accepter'){let r=await fetch('/api/demandes-creation/'+id+'/accepter',{method:'POST'});let j=await r.json();if(!j.ok){alert(j.msg);return;}}else{await fetch('/api/demandes-creation/'+id,{method:'DELETE'});}bootstrap.Modal.getInstance(document.getElementById('modalWA')).hide();loadCreations();load();}
-
+async function confirmAction(){
+  let type=document.getElementById('wa_action_type').value; let id=document.getElementById('wa_action_id').value;
+  if(type==='accepter'){let r=await fetch('/api/demandes-creation/'+id+'/accepter',{method:'POST'});let j=await r.json();if(!j.ok){alert(j.msg||'Erreur');return;} loadCreations();}
+  else if(type==='refuser'){await fetch('/api/demandes-creation/'+id,{method:'DELETE'}); loadCreations();}
+  else if(type==='oublie'){await fetch('/api/demandes-oublie/'+id+'/reset',{method:'POST'}); loadOublies();}
+  bootstrap.Modal.getInstance(document.getElementById('modalWA')).hide(); load();
+}
 async function loadCreations(){
   let r=await fetch('/api/demandes-creation');let data=await r.json();tempDemandes=data;
   document.getElementById('countCre').innerText=data.length;document.getElementById('zoneClients').style.display='none';
   let z=document.getElementById('zoneDemandes');z.innerHTML='<h5>📩 Demandes Création</h5>';if(data.length==0)z.innerHTML+='<p class="small text-muted">Aucune demande</p>';
-  data.forEach((d,i)=>{z.innerHTML+=`<div class="card p-3 mb-2 rounded-4 shadow-sm"><div><b>${d.nom_voulu}</b> - ${d.boutique} - ${d.tel} - Pass: ${d.pass}</div><div class="mt-2 d-flex gap-2"><button class="btn btn-success btn-sm rounded-pill" onclick="openForm('accepter',${i})">Accepter</button><button class="btn btn-danger btn-sm rounded-pill" onclick="openForm('refuser',${i})">Refuser</button></div></div>`;});
+  data.forEach((d,i)=>{z.innerHTML+=`<div class="card p-3 mb-2 rounded-4 shadow-sm"><div><b>Utilisateur:</b> ${d.nom_voulu} | <b>Boutique:</b> ${d.boutique} | <b>Tel:</b> ${d.tel} | <b>Pass:</b> ${d.pass}</div><div class="mt-2 d-flex gap-2"><button class="btn btn-success btn-sm rounded-pill" onclick="openFormCreation('accepter',${i})">Accepter</button><button class="btn btn-danger btn-sm rounded-pill" onclick="openFormCreation('refuser',${i})">Refuser</button></div></div>`;});
 }
-async function loadOublies(){let r=await fetch('/api/demandes-oublie');let data=await r.json();document.getElementById('countOub').innerText=data.length;document.getElementById('zoneClients').style.display='none';let z=document.getElementById('zoneDemandes');z.innerHTML='<h5>🔑 Oubliés</h5>';if(data.length==0)z.innerHTML+='<p class="small text-muted">Aucune</p>';data.forEach(d=>{z.innerHTML+=`<div class="card p-3 mb-2 rounded-4 shadow-sm"><div>${d.type} - ${d.identifiant}</div></div>`;});}
-load();setInterval(async()=>{let r1=await fetch('/api/demandes-creation');let d1=await r1.json();document.getElementById('countCre').innerText=d1.length;let r2=await fetch('/api/demandes-oublie');let d2=await r2.json();document.getElementById('countOub').innerText=d2.length;},5000);
+async function loadOublies(){
+  let r=await fetch('/api/demandes-oublie');let data=await r.json();tempOublies=data;
+  document.getElementById('countOub').innerText=data.length;document.getElementById('zoneClients').style.display='none';
+  let z=document.getElementById('zoneDemandes');z.innerHTML='<h5>🔑 Identifiants Oubliés</h5>';if(data.length==0)z.innerHTML+='<p class="small text-muted">Aucune demande</p>';
+  data.forEach((d,i)=>{z.innerHTML+=`<div class="card p-3 mb-2 rounded-4 shadow-sm"><div><b>${d.type.toUpperCase()}</b> - ${d.identifiant}</div><div class="mt-2 d-flex gap-2"><button class="btn btn-warning btn-sm rounded-pill" onclick="openFormOublie(${i})">Gérer + WhatsApp</button></div></div>`;});
+}
+load();
 </script></body></html>
