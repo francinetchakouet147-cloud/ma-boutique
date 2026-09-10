@@ -7,13 +7,7 @@ body{background:#f5f7fb;margin:0}
 .main{margin-left:260px;padding:20px}
 .btn-ham{display:none;position:fixed;top:10px;left:10px;z-index:1060;background:#0d6efd;color:white;border:none;width:45px;height:45px;border-radius:12px}
 .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1040}
-@media(max-width:768px){
-.sidebar{transform:translateX(-100%)}
-.sidebar.open{transform:translateX(0)}
-.main{margin-left:0;padding-top:65px}
-.btn-ham{display:flex;align-items:center;justify-content:center}
-.overlay.show{display:block}
-}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main{margin-left:0;padding-top:65px}.btn-ham{display:flex;align-items:center;justify-content:center}.overlay.show{display:block}}
 </style></head>
 <link rel="manifest" href="/static/manifest.json">
 <meta name="theme-color" content="#0d6efd">
@@ -25,8 +19,9 @@ body{background:#f5f7fb;margin:0}
 <h4>Tous mes clients (<span id="count">0</span>) <button class="btn btn-primary float-end rounded-pill" data-bs-toggle="modal" data-bs-target="#modalAdd" onclick="openAdd()">+ Nouveau</button></h4>
 
 <div class="d-flex gap-2 mt-3 flex-wrap">
+  <input id="searchClient" class="form-control rounded-pill" style="max-width:250px" placeholder="🔍 Rechercher client..." onkeyup="load()">
   <button class="btn btn-dark rounded-pill" onclick="loadCreations()">📩 Demandes Création (<span id="countCre">0</span>)</button>
-  <button class="btn btn-warning rounded-pill" onclick="loadOublies()">🔑 Identifiants Oubliés (<span id="countOub">0</span>)</button>
+  <button class="btn btn-warning rounded-pill" onclick="loadOublies()">🔑 Oubliés (<span id="countOub">0</span>)</button>
 </div>
 
 <div id="zoneDemandes" class="mt-3"></div>
@@ -34,10 +29,9 @@ body{background:#f5f7fb;margin:0}
 <div class="card p-2 mt-3 border-0 shadow-sm rounded-4"><div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Nom</th><th>Tél</th><th>Boutique</th><th>Pass</th><th>Statut</th><th>Actions</th></tr></thead><tbody id="tbody"></tbody></table></div></div>
 </div>
 
-<div class="modal fade" id="modalAdd"><div class="modal-dialog"><div class="modal-content rounded-4"><div class="modal-header"><h5 id="modalTitle">Nouveau</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="edit_id"><input id="c_nom" class="form-control mb-2 rounded-pill" placeholder="nom login"><input id="c_tel" class="form-control mb-2 rounded-pill" placeholder="tel"><input id="c_boutique" class="form-control mb-2 rounded-pill" placeholder="Boutique"></div><div class="modal-footer"><button class="btn btn-primary w-100 rounded-pill" onclick="saveClient()">Enregistrer</button></div></div></div></div>
+<div class="modal fade" id="modalAdd"><div class="modal-dialog"><div class="modal-content rounded-4"><div class="modal-header"><h5>Nouveau client (pass 1234)</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><input type="hidden" id="edit_id"><input id="c_nom" class="form-control mb-2 rounded-pill" placeholder="nom login"><input id="c_tel" class="form-control mb-2 rounded-pill" placeholder="tel"><input id="c_boutique" class="form-control mb-2 rounded-pill" placeholder="Boutique"></div><div class="modal-footer"><button class="btn btn-primary w-100 rounded-pill" onclick="saveClient()">Enregistrer avec 1234</button></div></div></div></div>
 
-<!-- MODAL WHATSAPP AVEC MESSAGE + NUMERO -->
-<div class="modal fade" id="modalWA"><div class="modal-dialog"><div class="modal-content rounded-4"><div class="modal-header"><h5>Envoyer sur WhatsApp</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+<div class="modal fade" id="modalWA"><div class="modal-dialog"><div class="modal-content rounded-4"><div class="modal-header"><h5>Envoyer WhatsApp</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
 <div class="modal-body">
 <label class="small fw-bold">Message</label><textarea id="wa_msg" class="form-control mb-2 rounded-3" rows="4"></textarea>
 <label class="small fw-bold">Numéro de téléphone</label><input id="wa_tel" class="form-control mb-2 rounded-pill" placeholder="6xxxxxxxx">
@@ -49,14 +43,18 @@ body{background:#f5f7fb;margin:0}
 <script>
 let clientsData=[];function toggleMenu(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show');}
 function openAdd(){document.getElementById('edit_id').value='';document.getElementById('c_nom').value='';document.getElementById('c_tel').value='';document.getElementById('c_boutique').value='';}
-async function load(){let r=await fetch('/api/clients');let cs=await r.json();clientsData=cs;document.getElementById('count').innerText=cs.length;let tb=document.getElementById('tbody');tb.innerHTML='';cs.forEach((c,i)=>{tb.innerHTML+=`<tr><td>${c.nom}</td><td>${c.tel}</td><td>${c.boutique}</td><td><span class="badge bg-dark">${c.pass}</span> <a href="#" onclick="resetPass('${c._id}');return false">↻</a></td><td><span class="badge ${c.bloque?'bg-danger':'bg-success'}">${c.bloque?'Bloqué':'Actif'}</span></td><td><button class="btn btn-sm btn-info" onclick="editClient(${i})"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm ${c.bloque?'btn-success':'btn-warning'}" onclick="toggleBlock('${c._id}',${c.bloque?1:0})"><i class="bi bi-lock"></i></button> <button class="btn btn-sm btn-danger" onclick="suppr('${c._id}')">X</button></td></tr>`});}
+async function load(){
+ let q=document.getElementById('searchClient').value.trim();
+ let url=q?`/api/clients?q=${encodeURIComponent(q)}`:'/api/clients';
+ let r=await fetch(url);let cs=await r.json();clientsData=cs;document.getElementById('count').innerText=cs.length;
+ let tb=document.getElementById('tbody');tb.innerHTML='';cs.forEach((c,i)=>{tb.innerHTML+=`<tr><td>${c.nom}</td><td>${c.tel}</td><td>${c.boutique}</td><td><span class="badge bg-dark">${c.pass}</span> <a href="#" onclick="resetPass('${c._id}');return false">↻</a></td><td><span class="badge ${c.bloque?'bg-danger':'bg-success'}">${c.bloque?'Bloqué':'Actif'}</span></td><td><button class="btn btn-sm btn-info" onclick="editClient(${i})"><i class="bi bi-pencil"></i></button> <button class="btn btn-sm ${c.bloque?'btn-success':'btn-warning'}" onclick="toggleBlock('${c._id}',${c.bloque?1:0})"><i class="bi bi-lock"></i></button> <button class="btn btn-sm btn-danger" onclick="suppr('${c._id}')">X</button></td></tr>`});
+}
 function editClient(i){let c=clientsData[i];document.getElementById('edit_id').value=c._id;document.getElementById('c_nom').value=c.nom;document.getElementById('c_tel').value=c.tel;document.getElementById('c_boutique').value=c.boutique;new bootstrap.Modal(document.getElementById('modalAdd')).show();}
-async function saveClient(){let id=document.getElementById('edit_id').value.trim();let nom=document.getElementById('c_nom').value.toLowerCase().trim();let tel=document.getElementById('c_tel').value.trim();let boutique=document.getElementById('c_boutique').value.trim();if(!nom||!tel||!boutique)return alert('Remplis tout');if(id){await fetch(`/api/clients/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom,tel,boutique})});}else{await fetch(`/api/clients`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom,tel,boutique})});}let el=document.getElementById('modalAdd');let m=bootstrap.Modal.getInstance(el)||new bootstrap.Modal(el);m.hide();load();}
+async function saveClient(){let id=document.getElementById('edit_id').value.trim();let nom=document.getElementById('c_nom').value.toLowerCase().trim();let tel=document.getElementById('c_tel').value.trim();let boutique=document.getElementById('c_boutique').value.trim();if(!nom||!tel||!boutique)return alert('Remplis tout');if(id){await fetch(`/api/clients/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom,tel,boutique})});}else{let rr=await fetch(`/api/clients`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nom,tel,boutique})}); let jj=await rr.json(); if(!jj.ok){ alert(jj.msg||'Erreur'); return; } }let el=document.getElementById('modalAdd');let m=bootstrap.Modal.getInstance(el)||new bootstrap.Modal(el);m.hide();load();}
 async function toggleBlock(id,b){await fetch(`/api/clients/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({bloque:b?0:1})});load();}
 async function suppr(id){if(!confirm('Supprimer?'))return;await fetch(`/api/clients/${id}`,{method:'DELETE'});load();}
 async function resetPass(id){if(!confirm('Reset 1234?'))return;await fetch(`/api/clients/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({reset:true})});load();}
 
-// NOUVELLES FONCTIONS
 function openWAForm(tel, msg){ document.getElementById('wa_tel').value=tel; document.getElementById('wa_msg').value=msg; new bootstrap.Modal(document.getElementById('modalWA')).show(); }
 function sendWA(){ let tel=document.getElementById('wa_tel').value.trim().replace(/[^0-9]/g,''); let msg=document.getElementById('wa_msg').value.trim(); if(!tel||!msg) return alert('Message et numéro obligatoires'); window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`,'_blank'); }
 
@@ -67,16 +65,16 @@ async function loadCreations(){
   if(data.length==0) z.innerHTML+='<p class="small text-muted">Aucune demande</p>';
   data.forEach(d=>{
     z.innerHTML+=`<div class="card p-3 mb-2 rounded-4 shadow-sm">
-      <div><b>${d.nom}</b> veut <b>${d.nom_voulu}</b> - Boutique: ${d.boutique} - Tel: ${d.tel}</div>
+      <div><b>Utilisateur:</b> ${d.nom_voulu} | <b>Boutique:</b> ${d.boutique} | <b>Tel:</b> ${d.tel} | <b>Pass:</b> ${d.pass}</div>
       <div class="mt-2 d-flex gap-2">
-        <button class="btn btn-success btn-sm rounded-pill" onclick="accepterCre('${d._id}')">Accepter</button>
+        <button class="btn btn-success btn-sm rounded-pill" onclick="accepterCre('${d._id}')">Accepter + Créer</button>
         <button class="btn btn-danger btn-sm rounded-pill" onclick="refuserCre('${d._id}')">Refuser</button>
-        <button class="btn btn-primary btn-sm rounded-pill" onclick="openWAForm('${d.tel}','Salut ${d.nom}, ton compte ATLAS est créé. Nom: ${d.nom_voulu} | Mot de passe universel: 1234. Connecte-toi et change ton mot de passe.')">📲 WhatsApp</button>
+        <button class="btn btn-primary btn-sm rounded-pill" onclick="openWAForm('${d.tel}','Salut, ton compte ATLAS a été créé avec succès.\\nNom: ${d.nom_voulu}\\nMot de passe: ${d.pass}\\nTu peux te connecter maintenant.')">📲 WhatsApp</button>
       </div>
     </div>`;
   });
 }
-async function accepterCre(id){ await fetch('/api/demandes-creation/'+id+'/accepter',{method:'POST'}); loadCreations(); load(); }
+async function accepterCre(id){ let r=await fetch('/api/demandes-creation/'+id+'/accepter',{method:'POST'}); let j=await r.json(); if(!j.ok){ alert(j.msg||'Nom déjà utilisé'); return; } loadCreations(); load(); }
 async function refuserCre(id){ await fetch('/api/demandes-creation/'+id,{method:'DELETE'}); loadCreations(); }
 
 async function loadOublies(){
@@ -86,7 +84,7 @@ async function loadOublies(){
   if(data.length==0) z.innerHTML+='<p class="small text-muted">Aucune demande</p>';
   data.forEach(d=>{
     z.innerHTML+=`<div class="card p-3 mb-2 rounded-4 shadow-sm">
-      <div><b>${d.type.toUpperCase()}</b> - Identifiant donné: ${d.identifiant} - <small>${new Date(d.date).toLocaleString()}</small></div>
+      <div><b>${d.type.toUpperCase()}</b> - ${d.identifiant}</div>
       <div class="mt-2 d-flex gap-2 flex-wrap">
         <button class="btn btn-warning btn-sm rounded-pill" onclick="resetOub('${d._id}')">Reset à 1234</button>
         <button class="btn btn-primary btn-sm rounded-pill" onclick="openWAForm('${d.identifiant}','Salut, voici ton identifiant ATLAS...')">📲 WhatsApp</button>
@@ -97,7 +95,6 @@ async function loadOublies(){
 async function resetOub(id){ if(!confirm('Reset à 1234?')) return; await fetch('/api/demandes-oublie/'+id+'/reset',{method:'POST'}); loadOublies(); load(); }
 
 load();
-// auto refresh counts
 setInterval(async()=>{
   let r1=await fetch('/api/demandes-creation'); let d1=await r1.json(); document.getElementById('countCre').innerText=d1.length;
   let r2=await fetch('/api/demandes-oublie'); let d2=await r2.json(); document.getElementById('countOub').innerText=d2.length;
